@@ -15,7 +15,8 @@ export default {
     exportJSON: '导出 JSON',
     importJSON: '导入 JSON',
     reset: '重置',
-    resetConfirm: '确定要重置所有数据吗？此操作不可撤销。'
+    resetConfirm: '确定要重置所有数据吗？此操作不可撤销。',
+    undo: '撤销 AI 修改'
   },
   editor: {
     title: '简历编辑',
@@ -126,7 +127,9 @@ export default {
       minimal: '简约模板'
     },
     scale: '缩放',
-    present: '至今'
+    present: '至今',
+    pageCount: '共 {count} 页',
+    pageN: '第 {n} 页'
   },
   ai: {
     title: 'AI 助手',
@@ -168,11 +171,25 @@ export default {
     moveDown: '下移',
     preview: '预览'
   },
+  diff: {
+    title: 'AI 结果对比',
+    before: '修改前',
+    after: '修改后',
+    changed: '有变化',
+    unchanged: '无变化',
+    noChanges: 'AI 返回内容与当前简历无差异',
+    changedCount: '{count} 个模块有变化',
+    selectedCount: '已选 {count} 个',
+    selectAll: '全选',
+    deselectAll: '取消全选',
+    applySelected: '应用所选 ({count})'
+  },
   messages: {
     exportSuccess: '导出成功',
     importSuccess: '导入成功',
     importError: '导入失败，请检查文件格式',
     resetSuccess: '数据已重置',
-    saved: '已自动保存'
+    saved: '已自动保存',
+    undoSuccess: '已撤销至上一版本'
   }
 }

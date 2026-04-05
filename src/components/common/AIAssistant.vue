@@ -13,15 +13,8 @@ import {
 } from '@/utils/ai'
 import { ElMessage } from 'element-plus'
 import type { AIProvider, ResumeData } from '@/types/resume'
-
-/** AI 返回的 JSON 不含头像；importData 会整表覆盖，需在写入后恢复本地头像 */
-function applyAiImport(parsed: unknown) {
-  const prevAvatar = resumeStore.data.personal.avatar
-  resumeStore.importData(parsed as ResumeData)
-  if (prevAvatar?.trim()) {
-    resumeStore.data.personal.avatar = prevAvatar
-  }
-}
+import AIDiffDialog from './AIDiffDialog.vue'
+import { v4 as uuidv4 } from 'uuid'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -40,9 +33,7 @@ const currentModels = computed(() => {
 
 watch(() => settingsStore.aiConfig.provider, (provider: AIProvider) => {
   const models = AI_MODELS[provider]
-  if (models && models.length > 0) {
-    settingsStore.setAIModel(models[0].value)
-  }
+  if (models?.length) settingsStore.setAIModel(models[0].value)
 })
 
 const dialogVisible = computed({
@@ -50,11 +41,96 @@ const dialogVisible = computed({
   set: (val) => emit('update:visible', val)
 })
 
-async function handleOptimize() {
-  if (!settingsStore.aiConfig.apiKey) {
-    ElMessage.warning(t('ai.noApiKey'))
-    return
+const showDiff = ref(false)
+const snapshotBefore = ref<ResumeData | null>(null)
+const aiResult = ref<Partial<ResumeData> | null>(null)
+
+function takeSnapshot(): ResumeData {
+  return JSON.parse(JSON.stringify(resumeStore.data))
+}
+
+function normalizeAiResult(raw: Partial<ResumeData>): Partial<ResumeData> {
+  const ensureIds = <T extends { id?: string }>(list: T[] | undefined): T[] | undefined => {
+    if (!Array.isArray(list)) return list
+    return list.map(item => ({
+      ...item,
+      id: typeof item.id === 'string' && item.id ? item.id : uuidv4()
+    }))
   }
+  return {
+    ...raw,
+    experience: ensureIds(raw.experience as any) as any,
+    education: ensureIds(raw.education as any) as any,
+    projects: ensureIds(raw.projects as any) as any,
+    customSections: ensureIds(raw.customSections as any) as any
+  }
+}
+
+function openDiff(parsed: Partial<ResumeData>) {
+  snapshotBefore.value = takeSnapshot()
+  aiResult.value = normalizeAiResult(parsed)
+  showDiff.value = true
+}
+
+function handleDiffApply(selected: Record<string, boolean>) {
+  const before = snapshotBefore.value
+  const after = aiResult.value
+  if (!before || !after) return
+
+  resumeStore.pushHistory()
+
+  const d = resumeStore.data
+  const prevAvatar = d.personal.avatar
+
+  if (selected.personal && after.personal) {
+    Object.assign(d.personal, after.personal)
+    d.personal.avatar = prevAvatar
+  }
+  if (selected.objective && after.objective !== undefined && after.objective !== '') {
+    d.objective = after.objective
+  }
+  if (selected.summary && after.summary !== undefined && after.summary !== '') {
+    d.summary = after.summary
+  }
+  if (selected.experience && Array.isArray(after.experience) && after.experience.length) {
+    d.experience = after.experience as any
+  }
+  if (selected.education && Array.isArray(after.education) && after.education.length) {
+    d.education = after.education as any
+  }
+  if (selected.skills && Array.isArray(after.skills) && after.skills.length) {
+    d.skills = after.skills
+  }
+  if (selected.projects && Array.isArray(after.projects) && after.projects.length) {
+    d.projects = after.projects as any
+  }
+  if (selected.languages && Array.isArray(after.languages) && after.languages.length) {
+    d.languages = after.languages as any
+  }
+  if (selected.customSections && Array.isArray(after.customSections) && after.customSections.length) {
+    d.customSections = after.customSections as any
+  }
+
+  ElMessage.success(t('ai.success'))
+}
+
+function resolveAiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err)
+  const lower = msg.toLowerCase()
+  if (lower.includes('insufficient balance') || msg.includes('余额不足')) {
+    return t('ai.errorInsufficientBalance') || msg
+  }
+  if (lower.includes('invalid_api_key') || lower.includes('invalid api key')) {
+    return t('ai.errorInvalidKey') || msg
+  }
+  if (lower.includes('rate limit') || lower.includes('too many requests') || msg.includes('429')) {
+    return t('ai.errorRateLimit') || msg
+  }
+  return t('ai.error') + ': ' + msg
+}
+
+async function handleOptimize() {
+  if (!settingsStore.aiConfig.apiKey) { ElMessage.warning(t('ai.noApiKey')); return }
   loading.value = true
   try {
     const result = await callAI(
@@ -62,21 +138,17 @@ async function handleOptimize() {
       AI_PROMPTS.optimize,
       JSON.stringify(resumeDataForAiUserMessage(resumeStore.data), null, 2)
     )
-    const parsed = parseAIJsonResponse(result)
-    applyAiImport(parsed)
-    ElMessage.success(t('ai.success'))
-  } catch (e: any) {
-    ElMessage.error(t('ai.error') + ': ' + (e.message || ''))
+    const parsed = parseAIJsonResponse(result) as Partial<ResumeData>
+    openDiff(parsed)
+  } catch (e) {
+    ElMessage.error(resolveAiError(e))
   } finally {
     loading.value = false
   }
 }
 
 async function handleGenerate() {
-  if (!settingsStore.aiConfig.apiKey) {
-    ElMessage.warning(t('ai.noApiKey'))
-    return
-  }
+  if (!settingsStore.aiConfig.apiKey) { ElMessage.warning(t('ai.noApiKey')); return }
   if (!jobDescription.value.trim()) return
   loading.value = true
   try {
@@ -85,27 +157,17 @@ async function handleGenerate() {
       AI_PROMPTS.generate,
       jobDescription.value
     )
-    const parsed = parseAIJsonResponse<{
-      objective?: string
-      summary?: string
-      skills?: string[]
-    }>(result)
-    if (parsed.objective) resumeStore.data.objective = parsed.objective
-    if (parsed.summary) resumeStore.data.summary = parsed.summary
-    if (parsed.skills) resumeStore.data.skills = parsed.skills
-    ElMessage.success(t('ai.success'))
-  } catch (e: any) {
-    ElMessage.error(t('ai.error') + ': ' + (e.message || ''))
+    const parsed = parseAIJsonResponse(result) as Partial<ResumeData>
+    openDiff(parsed)
+  } catch (e) {
+    ElMessage.error(resolveAiError(e))
   } finally {
     loading.value = false
   }
 }
 
 async function handleTranslate(target: 'en' | 'zh') {
-  if (!settingsStore.aiConfig.apiKey) {
-    ElMessage.warning(t('ai.noApiKey'))
-    return
-  }
+  if (!settingsStore.aiConfig.apiKey) { ElMessage.warning(t('ai.noApiKey')); return }
   loading.value = true
   try {
     const prompt = target === 'en' ? AI_PROMPTS.translate_en : AI_PROMPTS.translate_zh
@@ -114,21 +176,17 @@ async function handleTranslate(target: 'en' | 'zh') {
       prompt,
       JSON.stringify(resumeDataForAiUserMessage(resumeStore.data), null, 2)
     )
-    const parsed = parseAIJsonResponse(result)
-    applyAiImport(parsed)
-    ElMessage.success(t('ai.success'))
-  } catch (e: any) {
-    ElMessage.error(t('ai.error') + ': ' + (e.message || ''))
+    const parsed = parseAIJsonResponse(result) as Partial<ResumeData>
+    openDiff(parsed)
+  } catch (e) {
+    ElMessage.error(resolveAiError(e))
   } finally {
     loading.value = false
   }
 }
 
 async function handleParse() {
-  if (!settingsStore.aiConfig.apiKey) {
-    ElMessage.warning(t('ai.noApiKey'))
-    return
-  }
+  if (!settingsStore.aiConfig.apiKey) { ElMessage.warning(t('ai.noApiKey')); return }
   if (!pasteText.value.trim()) return
   loading.value = true
   try {
@@ -137,17 +195,15 @@ async function handleParse() {
       AI_PROMPTS.parse,
       pasteText.value
     )
-    const parsed = parseAIJsonResponse(result)
-    applyAiImport(parsed)
-    ElMessage.success(t('ai.success'))
+    const parsed = parseAIJsonResponse(result) as Partial<ResumeData>
+    openDiff(parsed)
     pasteText.value = ''
-  } catch (e: any) {
-    ElMessage.error(t('ai.error') + ': ' + (e.message || ''))
+  } catch (e) {
+    ElMessage.error(resolveAiError(e))
   } finally {
     loading.value = false
   }
 }
-
 </script>
 
 <template>
@@ -174,12 +230,7 @@ async function handleParse() {
                 @update:model-value="settingsStore.setAIProvider($event as AIProvider)"
                 style="width: 100%"
               >
-                <el-option
-                  v-for="p in AI_PROVIDERS"
-                  :key="p.value"
-                  :label="p.label"
-                  :value="p.value"
-                />
+                <el-option v-for="p in AI_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -190,12 +241,7 @@ async function handleParse() {
                 @update:model-value="settingsStore.setAIModel($event)"
                 style="width: 100%"
               >
-                <el-option
-                  v-for="m in currentModels"
-                  :key="m.value"
-                  :label="m.label"
-                  :value="m.value"
-                />
+                <el-option v-for="m in currentModels" :key="m.value" :label="m.label" :value="m.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -203,20 +249,12 @@ async function handleParse() {
         <el-row :gutter="12">
           <el-col :span="12">
             <el-form-item :label="t('ai.apiKey')">
-              <el-input
-                v-model="settingsStore.aiConfig.apiKey"
-                type="password"
-                show-password
-                :placeholder="t('ai.apiKeyPlaceholder')"
-              />
+              <el-input v-model="settingsStore.aiConfig.apiKey" type="password" show-password :placeholder="t('ai.apiKeyPlaceholder')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item :label="t('ai.endpoint')">
-              <el-input
-                v-model="settingsStore.aiConfig.apiEndpoint"
-                :placeholder="t('ai.endpointPlaceholder')"
-              />
+              <el-input v-model="settingsStore.aiConfig.apiEndpoint" :placeholder="t('ai.endpointPlaceholder')" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -234,13 +272,7 @@ async function handleParse() {
 
       <el-tab-pane name="generate" :label="t('ai.generate')">
         <p class="ai-desc">{{ t('ai.generateDesc') }}</p>
-        <el-input
-          v-model="jobDescription"
-          type="textarea"
-          :rows="5"
-          :placeholder="t('ai.jobDescriptionPlaceholder')"
-          style="margin-bottom: 12px;"
-        />
+        <el-input v-model="jobDescription" type="textarea" :rows="5" :placeholder="t('ai.jobDescriptionPlaceholder')" style="margin-bottom: 12px;" />
         <el-button type="primary" :loading="loading" @click="handleGenerate" style="width: 100%;">
           <el-icon><MagicStick /></el-icon>
           {{ t('ai.generate') }}
@@ -261,13 +293,7 @@ async function handleParse() {
 
       <el-tab-pane name="parse" :label="t('ai.parse')">
         <p class="ai-desc">{{ t('ai.parseDesc') }}</p>
-        <el-input
-          v-model="pasteText"
-          type="textarea"
-          :rows="8"
-          :placeholder="t('ai.pasteResumePlaceholder')"
-          style="margin-bottom: 12px;"
-        />
+        <el-input v-model="pasteText" type="textarea" :rows="8" :placeholder="t('ai.pasteResumePlaceholder')" style="margin-bottom: 12px;" />
         <el-button type="primary" :loading="loading" @click="handleParse" style="width: 100%;">
           <el-icon><MagicStick /></el-icon>
           {{ t('ai.parse') }}
@@ -280,16 +306,21 @@ async function handleParse() {
       <span>{{ t('ai.processing') }}</span>
     </div>
   </el-dialog>
+
+  <!-- Diff Dialog -->
+  <AIDiffDialog
+    v-if="snapshotBefore && aiResult"
+    v-model:visible="showDiff"
+    :before="snapshotBefore"
+    :after="aiResult"
+    @apply="handleDiffApply"
+  />
 </template>
 
 <style scoped lang="scss">
 .ai-config-card {
-  :deep(.el-card__header) {
-    padding: 10px 16px;
-  }
-  :deep(.el-card__body) {
-    padding: 12px 16px;
-  }
+  :deep(.el-card__header) { padding: 10px 16px; }
+  :deep(.el-card__body) { padding: 12px 16px; }
 }
 
 .ai-desc {

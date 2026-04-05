@@ -10,27 +10,32 @@ export async function exportToPDF(element: HTMLElement, filename = 'resume.pdf')
     backgroundColor: '#ffffff'
   })
 
-  const imgData = canvas.toDataURL('image/png')
   const pdf = new jsPDF('p', 'mm', 'a4')
   const pdfWidth = pdf.internal.pageSize.getWidth()
   const pdfHeight = pdf.internal.pageSize.getHeight()
-  const imgWidth = canvas.width
-  const imgHeight = canvas.height
-  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-  const imgX = (pdfWidth - imgWidth * ratio) / 2
-  const imgY = 0
 
-  let heightLeft = imgHeight * ratio
-  let position = imgY
+  const ratio = pdfWidth / canvas.width
+  const scaledFullHeight = canvas.height * ratio
+  const pageCanvasHeight = Math.floor(pdfHeight / ratio)
+  const totalPages = Math.max(1, Math.ceil(canvas.height / pageCanvasHeight))
 
-  pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio)
-  heightLeft -= pdfHeight
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) pdf.addPage()
 
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight * ratio
-    pdf.addPage()
-    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio)
-    heightLeft -= pdfHeight
+    const srcY = page * pageCanvasHeight
+    const srcH = Math.min(pageCanvasHeight, canvas.height - srcY)
+
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = srcH
+    const ctx = pageCanvas.getContext('2d')!
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+    ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH)
+
+    const pageImg = pageCanvas.toDataURL('image/png')
+    const drawH = srcH * ratio
+    pdf.addImage(pageImg, 'PNG', 0, 0, pdfWidth, drawH)
   }
 
   pdf.save(filename)

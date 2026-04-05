@@ -62,6 +62,12 @@ async function handleImportJSON(file: UploadFile) {
   return false
 }
 
+function handleUndo() {
+  if (resumeStore.undo()) {
+    ElMessage.success(t('messages.undoSuccess'))
+  }
+}
+
 function handleReset() {
   ElMessageBox.confirm(t('nav.resetConfirm'), t('nav.reset'), {
     confirmButtonText: t('actions.confirm'),
@@ -84,6 +90,12 @@ function handleReset() {
         <el-tooltip :content="t('ai.title')">
           <el-button circle @click="showAI = true">
             <el-icon><MagicStick /></el-icon>
+          </el-button>
+        </el-tooltip>
+
+        <el-tooltip :content="t('nav.undo')">
+          <el-button circle :disabled="!resumeStore.canUndo" @click="handleUndo">
+            <el-icon><RefreshLeft /></el-icon>
           </el-button>
         </el-tooltip>
 

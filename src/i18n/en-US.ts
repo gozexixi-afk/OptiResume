@@ -15,7 +15,8 @@ export default {
     exportJSON: 'Export JSON',
     importJSON: 'Import JSON',
     reset: 'Reset',
-    resetConfirm: 'Are you sure you want to reset all data? This action cannot be undone.'
+    resetConfirm: 'Are you sure you want to reset all data? This action cannot be undone.',
+    undo: 'Undo AI Changes'
   },
   editor: {
     title: 'Resume Editor',
@@ -126,7 +127,9 @@ export default {
       minimal: 'Minimal'
     },
     scale: 'Zoom',
-    present: 'Present'
+    present: 'Present',
+    pageCount: '{count} pages',
+    pageN: 'Page {n}'
   },
   ai: {
     title: 'AI Assistant',
@@ -168,11 +171,25 @@ export default {
     moveDown: 'Move Down',
     preview: 'Preview'
   },
+  diff: {
+    title: 'AI Result Comparison',
+    before: 'Before',
+    after: 'After',
+    changed: 'Changed',
+    unchanged: 'Unchanged',
+    noChanges: 'AI output is identical to your current resume',
+    changedCount: '{count} section(s) changed',
+    selectedCount: '{count} selected',
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
+    applySelected: 'Apply Selected ({count})'
+  },
   messages: {
     exportSuccess: 'Export successful',
     importSuccess: 'Import successful',
     importError: 'Import failed, please check file format',
     resetSuccess: 'Data has been reset',
-    saved: 'Auto-saved'
+    saved: 'Auto-saved',
+    undoSuccess: 'Reverted to previous version'
   }
 }

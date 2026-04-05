@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ResumeData, ExperienceItem, EducationItem, ProjectItem, LanguageItem, CustomSection } from '@/types/resume'
 import { v4 as uuidv4 } from 'uuid'
 
 const STORAGE_KEY = 'optiresume-data'
+const MAX_HISTORY = 20
 
 function createDefaultResume(): ResumeData {
   return {
@@ -40,10 +41,23 @@ function loadFromStorage(): ResumeData {
 
 export const useResumeStore = defineStore('resume', () => {
   const data = ref<ResumeData>(loadFromStorage())
+  const history = ref<ResumeData[]>([])
+  const canUndo = computed(() => history.value.length > 0)
 
   watch(data, (val) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
   }, { deep: true })
+
+  function pushHistory() {
+    history.value.push(JSON.parse(JSON.stringify(data.value)))
+    if (history.value.length > MAX_HISTORY) history.value.shift()
+  }
+
+  function undo(): boolean {
+    if (!history.value.length) return false
+    data.value = history.value.pop()!
+    return true
+  }
 
   function addExperience() {
     data.value.experience.push({
@@ -143,6 +157,10 @@ export const useResumeStore = defineStore('resume', () => {
 
   return {
     data,
+    history,
+    canUndo,
+    pushHistory,
+    undo,
     addExperience, removeExperience, moveExperience,
     addEducation, removeEducation, moveEducation,
     addProject, removeProject,

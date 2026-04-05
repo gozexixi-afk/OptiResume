@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
 import type { TemplateType } from '@/types/resume'
@@ -24,6 +24,44 @@ const scaleStyle = computed(() => ({
   transformOrigin: 'top center'
 }))
 
+const pageHeightPx = ref(1123)
+const contentHeight = ref(0)
+let resizeObserver: ResizeObserver | null = null
+
+const pageCount = computed(() => {
+  if (!contentHeight.value || !pageHeightPx.value) return 1
+  return Math.max(1, Math.ceil(contentHeight.value / pageHeightPx.value))
+})
+
+const pageBreakPositions = computed(() => {
+  const breaks: number[] = []
+  for (let i = 1; i < pageCount.value; i++) {
+    breaks.push(i * pageHeightPx.value)
+  }
+  return breaks
+})
+
+onMounted(() => {
+  const measure = document.createElement('div')
+  measure.style.cssText = 'position:absolute;visibility:hidden;width:210mm;height:297mm;pointer-events:none'
+  document.body.appendChild(measure)
+  pageHeightPx.value = measure.getBoundingClientRect().height
+  document.body.removeChild(measure)
+
+  nextTick(() => {
+    if (resumeEl.value) {
+      resizeObserver = new ResizeObserver(entries => {
+        contentHeight.value = entries[0].contentRect.height
+      })
+      resizeObserver.observe(resumeEl.value)
+    }
+  })
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+})
+
 function getResumeElement(): HTMLElement | undefined {
   return resumeEl.value
 }
@@ -45,6 +83,10 @@ defineExpose({ getResumeElement })
         :label="t(`preview.templates.${tpl}`)"
       />
     </el-tabs>
+    <div class="page-indicator" v-if="pageCount > 1">
+      <el-icon><Document /></el-icon>
+      <span>{{ t('preview.pageCount', { count: pageCount }) }}</span>
+    </div>
     <div class="scale-control">
       <el-icon><ZoomIn /></el-icon>
       <el-slider
@@ -60,8 +102,19 @@ defineExpose({ getResumeElement })
     </div>
   </div>
   <div class="preview-content">
-    <div ref="resumeEl" class="resume-page" :style="scaleStyle">
-      <component :is="currentComponent" />
+    <div class="resume-wrapper" :style="scaleStyle">
+      <div ref="resumeEl" class="resume-page">
+        <component :is="currentComponent" />
+      </div>
+      <div
+        v-for="(pos, i) in pageBreakPositions"
+        :key="i"
+        class="page-break-marker"
+        :style="{ top: pos + 'px' }"
+      >
+        <div class="page-break-line" />
+        <span class="page-break-label">{{ t('preview.pageN', { n: i + 2 }) }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -79,11 +132,60 @@ defineExpose({ getResumeElement })
   min-width: 36px;
 }
 
+.page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--el-color-warning);
+  background: var(--el-color-warning-light-9);
+  padding: 2px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.resume-wrapper {
+  position: relative;
+  width: 210mm;
+  transition: transform 0.2s ease;
+}
+
 .resume-page {
   width: 210mm;
   min-height: 297mm;
   background: #ffffff;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
+}
+
+.page-break-marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.page-break-line {
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  top: -1px;
+  border-top: 2px dashed rgba(231, 76, 60, 0.5);
+}
+
+.page-break-label {
+  position: absolute;
+  top: -10px;
+  right: -12px;
+  background: rgba(231, 76, 60, 0.85);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 0 0 4px 4px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 </style>
