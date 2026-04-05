@@ -1,0 +1,301 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useResumeStore } from '@/stores/resume'
+
+const { t } = useI18n()
+const store = useResumeStore()
+</script>
+
+<template>
+  <div class="modern-template">
+    <!-- Sidebar -->
+    <aside class="mt-sidebar">
+      <div class="mt-avatar" v-if="store.data.personal.avatar">
+        <img :src="store.data.personal.avatar" alt="avatar" />
+      </div>
+      <div class="mt-name-block">
+        <h1 class="mt-name">{{ store.data.personal.name || t('personal.name') }}</h1>
+        <p class="mt-title" v-if="store.data.personal.title">{{ store.data.personal.title }}</p>
+      </div>
+
+      <!-- Contact -->
+      <div class="mt-sidebar-section">
+        <h3 class="mt-sidebar-title">{{ t('personal.title') }}</h3>
+        <ul class="mt-contact-list">
+          <li v-if="store.data.personal.email">{{ store.data.personal.email }}</li>
+          <li v-if="store.data.personal.phone">{{ store.data.personal.phone }}</li>
+          <li v-if="store.data.personal.location">{{ store.data.personal.location }}</li>
+          <li v-if="store.data.personal.website">{{ store.data.personal.website }}</li>
+        </ul>
+      </div>
+
+      <!-- Skills -->
+      <div class="mt-sidebar-section" v-if="store.data.skills.length > 0">
+        <h3 class="mt-sidebar-title">{{ t('skills.title') }}</h3>
+        <div class="mt-skills">
+          <span v-for="(skill, i) in store.data.skills" :key="i" class="mt-skill">{{ skill }}</span>
+        </div>
+      </div>
+
+      <!-- Languages -->
+      <div class="mt-sidebar-section" v-if="store.data.languages.length > 0">
+        <h3 class="mt-sidebar-title">{{ t('languages.title') }}</h3>
+        <div class="mt-lang-list">
+          <div v-for="(lang, i) in store.data.languages" :key="i" class="mt-lang-item">
+            <span>{{ lang.name }}</span>
+            <span class="mt-lang-level">{{ lang.level ? (t(`languages.levels.${lang.level}`) || lang.level) : '' }}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="mt-main">
+      <!-- Objective -->
+      <section v-if="store.data.objective" class="mt-section">
+        <h2 class="mt-section-title">{{ t('objective.title') }}</h2>
+        <p>{{ store.data.objective }}</p>
+      </section>
+
+      <!-- Summary -->
+      <section v-if="store.data.summary" class="mt-section">
+        <h2 class="mt-section-title">{{ t('summary.title') }}</h2>
+        <div v-html="store.data.summary"></div>
+      </section>
+
+      <!-- Experience -->
+      <section v-if="store.data.experience.length > 0" class="mt-section">
+        <h2 class="mt-section-title">{{ t('experience.title') }}</h2>
+        <div v-for="exp in store.data.experience" :key="exp.id" class="mt-item">
+          <div class="mt-item-dot"></div>
+          <div class="mt-item-content">
+            <div class="mt-item-header">
+              <h3>{{ exp.position }}</h3>
+              <span class="mt-date">
+                {{ exp.startDate }} - {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
+              </span>
+            </div>
+            <p class="mt-company" v-if="exp.company">{{ exp.company }}</p>
+            <p class="mt-desc" v-if="exp.description">{{ exp.description }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Education -->
+      <section v-if="store.data.education.length > 0" class="mt-section">
+        <h2 class="mt-section-title">{{ t('education.title') }}</h2>
+        <div v-for="edu in store.data.education" :key="edu.id" class="mt-item">
+          <div class="mt-item-dot"></div>
+          <div class="mt-item-content">
+            <div class="mt-item-header">
+              <h3>{{ edu.school }}</h3>
+              <span class="mt-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
+            </div>
+            <p class="mt-company" v-if="edu.degree || edu.field">{{ edu.degree }} · {{ edu.field }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Projects -->
+      <section v-if="store.data.projects.length > 0" class="mt-section">
+        <h2 class="mt-section-title">{{ t('projects.title') }}</h2>
+        <div v-for="proj in store.data.projects" :key="proj.id" class="mt-item">
+          <div class="mt-item-dot"></div>
+          <div class="mt-item-content">
+            <h3>{{ proj.name }}</h3>
+            <p class="mt-desc" v-if="proj.description">{{ proj.description }}</p>
+            <a v-if="proj.link" :href="proj.link" class="mt-link" target="_blank">{{ proj.link }}</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Custom -->
+      <section v-for="section in store.data.customSections" :key="section.id" class="mt-section">
+        <h2 class="mt-section-title">{{ section.title }}</h2>
+        <p>{{ section.content }}</p>
+      </section>
+    </main>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.modern-template {
+  display: flex;
+  min-height: 297mm;
+  font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.mt-sidebar {
+  width: 220px;
+  background: #1a365d;
+  color: #e2e8f0;
+  padding: 28px 20px;
+  flex-shrink: 0;
+}
+
+.mt-avatar {
+  text-align: center;
+  margin-bottom: 16px;
+
+  img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+.mt-name-block {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mt-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.mt-title {
+  font-size: 13px;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.mt-sidebar-section {
+  margin-bottom: 20px;
+}
+
+.mt-sidebar-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #90cdf4;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.mt-contact-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    font-size: 11px;
+    margin-bottom: 6px;
+    word-break: break-all;
+    color: #cbd5e0;
+  }
+}
+
+.mt-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mt-skill {
+  background: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.mt-lang-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.mt-lang-level {
+  color: #a0aec0;
+  font-size: 11px;
+}
+
+.mt-main {
+  flex: 1;
+  padding: 28px 30px;
+}
+
+.mt-section {
+  margin-bottom: 18px;
+}
+
+.mt-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a365d;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #3182ce;
+}
+
+.mt-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.mt-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3182ce;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+
+.mt-item-content {
+  flex: 1;
+}
+
+.mt-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #2d3748;
+  }
+}
+
+.mt-date {
+  font-size: 12px;
+  color: #718096;
+  white-space: nowrap;
+}
+
+.mt-company {
+  font-size: 12px;
+  color: #718096;
+  margin: 2px 0 4px;
+}
+
+.mt-desc {
+  font-size: 12px;
+  color: #4a5568;
+  margin: 4px 0 0;
+  white-space: pre-line;
+}
+
+.mt-link {
+  font-size: 11px;
+  color: #3182ce;
+  text-decoration: none;
+}
+</style>
