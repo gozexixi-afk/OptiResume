@@ -1,10 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import type { ResumeData, ExperienceItem, EducationItem, ProjectItem, LanguageItem, CustomSection } from '@/types/resume'
+import type { ResumeData, ResumeSectionKey } from '@/types/resume'
 import { v4 as uuidv4 } from 'uuid'
 
 const STORAGE_KEY = 'optiresume-data'
+const SECTION_ORDER_KEY = 'optiresume-section-order'
 const MAX_HISTORY = 20
+const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
+  'personal',
+  'objective',
+  'summary',
+  'experience',
+  'education',
+  'skills',
+  'projects',
+  'languages',
+  'customSections'
+]
 
 function createDefaultResume(): ResumeData {
   return {
@@ -39,13 +51,31 @@ function loadFromStorage(): ResumeData {
   return createDefaultResume()
 }
 
+function loadSectionOrder(): ResumeSectionKey[] {
+  try {
+    const raw = localStorage.getItem(SECTION_ORDER_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((item): item is ResumeSectionKey => DEFAULT_SECTION_ORDER.includes(item))
+        if (filtered.length > 0) return filtered
+      }
+    }
+  } catch { /* ignore */ }
+  return [...DEFAULT_SECTION_ORDER]
+}
+
 export const useResumeStore = defineStore('resume', () => {
   const data = ref<ResumeData>(loadFromStorage())
+  const sectionOrder = ref<ResumeSectionKey[]>(loadSectionOrder())
   const history = ref<ResumeData[]>([])
   const canUndo = computed(() => history.value.length > 0)
 
   watch(data, (val) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+  }, { deep: true })
+  watch(sectionOrder, (val) => {
+    localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(val))
   }, { deep: true })
 
   function pushHistory() {
@@ -139,6 +169,7 @@ export const useResumeStore = defineStore('resume', () => {
 
   function resetData() {
     data.value = createDefaultResume()
+    sectionOrder.value = [...DEFAULT_SECTION_ORDER]
   }
 
   function moveItem<T>(arr: T[], from: number, to: number) {
@@ -155,8 +186,22 @@ export const useResumeStore = defineStore('resume', () => {
     moveItem(data.value.education, from, to)
   }
 
+  function moveSection(from: number, to: number) {
+    moveItem(sectionOrder.value, from, to)
+  }
+
+  function removeSection(section: ResumeSectionKey) {
+    if (sectionOrder.value.length <= 1) return
+    sectionOrder.value = sectionOrder.value.filter(item => item !== section)
+  }
+
+  function hasSection(section: ResumeSectionKey): boolean {
+    return sectionOrder.value.includes(section)
+  }
+
   return {
     data,
+    sectionOrder,
     history,
     canUndo,
     pushHistory,
@@ -167,6 +212,7 @@ export const useResumeStore = defineStore('resume', () => {
     addLanguage, removeLanguage,
     addCustomSection, removeCustomSection,
     addSkill, removeSkill,
+    moveSection, removeSection, hasSection,
     importData, resetData
   }
 })

@@ -1,25 +1,50 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import type { ResumeSectionKey } from '@/types/resume'
 
 const { t } = useI18n()
 const store = useResumeStore()
+const orderedSections = computed(() => store.sectionOrder.filter(key => key !== 'personal'))
+
+function isSectionVisible(section: ResumeSectionKey): boolean {
+  switch (section) {
+    case 'objective':
+      return !!store.data.objective
+    case 'summary':
+      return !!store.data.summary
+    case 'experience':
+      return store.data.experience.length > 0
+    case 'education':
+      return store.data.education.length > 0
+    case 'skills':
+      return store.data.skills.length > 0
+    case 'projects':
+      return store.data.projects.length > 0
+    case 'languages':
+      return store.data.languages.length > 0
+    case 'customSections':
+      return store.data.customSections.length > 0
+    default:
+      return false
+  }
+}
 </script>
 
 <template>
   <div class="modern-template">
     <!-- Sidebar -->
     <aside class="mt-sidebar">
-      <div class="mt-avatar" v-if="store.data.personal.avatar">
+      <div class="mt-avatar" v-if="store.hasSection('personal') && store.data.personal.avatar">
         <img :src="store.data.personal.avatar" alt="avatar" />
       </div>
-      <div class="mt-name-block">
+      <div v-if="store.hasSection('personal')" class="mt-name-block">
         <h1 class="mt-name">{{ store.data.personal.name || t('personal.name') }}</h1>
         <p class="mt-title" v-if="store.data.personal.title">{{ store.data.personal.title }}</p>
       </div>
 
-      <!-- Contact -->
-      <div class="mt-sidebar-section">
+      <div v-if="store.hasSection('personal')" class="mt-sidebar-section">
         <h3 class="mt-sidebar-title">{{ t('personal.title') }}</h3>
         <ul class="mt-contact-list">
           <li v-if="store.data.personal.email">{{ store.data.personal.email }}</li>
@@ -29,91 +54,87 @@ const store = useResumeStore()
         </ul>
       </div>
 
-      <!-- Skills -->
-      <div class="mt-sidebar-section" v-if="store.data.skills.length > 0">
-        <h3 class="mt-sidebar-title">{{ t('skills.title') }}</h3>
-        <div class="mt-skills">
-          <span v-for="(skill, i) in store.data.skills" :key="i" class="mt-skill">{{ skill }}</span>
-        </div>
-      </div>
-
-      <!-- Languages -->
-      <div class="mt-sidebar-section" v-if="store.data.languages.length > 0">
-        <h3 class="mt-sidebar-title">{{ t('languages.title') }}</h3>
-        <div class="mt-lang-list">
-          <div v-for="(lang, i) in store.data.languages" :key="i" class="mt-lang-item">
-            <span>{{ lang.name }}</span>
-            <span class="mt-lang-level">{{ lang.level ? (t(`languages.levels.${lang.level}`) || lang.level) : '' }}</span>
-          </div>
-        </div>
-      </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="mt-main">
-      <!-- Objective -->
-      <section v-if="store.data.objective" class="mt-section">
-        <h2 class="mt-section-title">{{ t('objective.title') }}</h2>
-        <p>{{ store.data.objective }}</p>
-      </section>
+      <template v-for="section in orderedSections" :key="section">
+        <section v-if="section === 'objective' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('objective.title') }}</h2>
+          <p>{{ store.data.objective }}</p>
+        </section>
 
-      <!-- Summary -->
-      <section v-if="store.data.summary" class="mt-section">
-        <h2 class="mt-section-title">{{ t('summary.title') }}</h2>
-        <div v-html="store.data.summary"></div>
-      </section>
+        <section v-else-if="section === 'summary' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('summary.title') }}</h2>
+          <div v-html="store.data.summary"></div>
+        </section>
 
-      <!-- Experience -->
-      <section v-if="store.data.experience.length > 0" class="mt-section">
-        <h2 class="mt-section-title">{{ t('experience.title') }}</h2>
-        <div v-for="exp in store.data.experience" :key="exp.id" class="mt-item">
-          <div class="mt-item-dot"></div>
-          <div class="mt-item-content">
-            <div class="mt-item-header">
-              <h3>{{ exp.position }}</h3>
-              <span class="mt-date">
-                {{ exp.startDate }} - {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
-              </span>
+        <section v-else-if="section === 'experience' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('experience.title') }}</h2>
+          <div v-for="exp in store.data.experience" :key="exp.id" class="mt-item">
+            <div class="mt-item-dot"></div>
+            <div class="mt-item-content">
+              <div class="mt-item-header">
+                <h3>{{ exp.position }}</h3>
+                <span class="mt-date">
+                  {{ exp.startDate }} - {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
+                </span>
+              </div>
+              <p class="mt-company" v-if="exp.company">{{ exp.company }}</p>
+              <p class="mt-desc" v-if="exp.description">{{ exp.description }}</p>
             </div>
-            <p class="mt-company" v-if="exp.company">{{ exp.company }}</p>
-            <p class="mt-desc" v-if="exp.description">{{ exp.description }}</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Education -->
-      <section v-if="store.data.education.length > 0" class="mt-section">
-        <h2 class="mt-section-title">{{ t('education.title') }}</h2>
-        <div v-for="edu in store.data.education" :key="edu.id" class="mt-item">
-          <div class="mt-item-dot"></div>
-          <div class="mt-item-content">
-            <div class="mt-item-header">
-              <h3>{{ edu.school }}</h3>
-              <span class="mt-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
+        <section v-else-if="section === 'education' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('education.title') }}</h2>
+          <div v-for="edu in store.data.education" :key="edu.id" class="mt-item">
+            <div class="mt-item-dot"></div>
+            <div class="mt-item-content">
+              <div class="mt-item-header">
+                <h3>{{ edu.school }}</h3>
+                <span class="mt-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
+              </div>
+              <p class="mt-company" v-if="edu.degree || edu.field">{{ edu.degree }} · {{ edu.field }}</p>
             </div>
-            <p class="mt-company" v-if="edu.degree || edu.field">{{ edu.degree }} · {{ edu.field }}</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Projects -->
-      <section v-if="store.data.projects.length > 0" class="mt-section">
-        <h2 class="mt-section-title">{{ t('projects.title') }}</h2>
-        <div v-for="proj in store.data.projects" :key="proj.id" class="mt-item">
-          <div class="mt-item-dot"></div>
-          <div class="mt-item-content">
-            <h3>{{ proj.name }}</h3>
-            <p class="mt-desc" v-if="proj.description">{{ proj.description }}</p>
-            <a v-if="proj.link" :href="proj.link" class="mt-link" target="_blank">{{ proj.link }}</a>
+        <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('skills.title') }}</h2>
+          <div class="mt-skills">
+            <span v-for="(skill, i) in store.data.skills" :key="i" class="mt-skill">{{ skill }}</span>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Custom -->
-      <section v-for="section in store.data.customSections" :key="section.id" class="mt-section">
-        <h2 class="mt-section-title">{{ section.title }}</h2>
-        <p>{{ section.content }}</p>
-      </section>
+        <section v-else-if="section === 'projects' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('projects.title') }}</h2>
+          <div v-for="proj in store.data.projects" :key="proj.id" class="mt-item">
+            <div class="mt-item-dot"></div>
+            <div class="mt-item-content">
+              <h3>{{ proj.name }}</h3>
+              <p class="mt-desc" v-if="proj.description">{{ proj.description }}</p>
+              <a v-if="proj.link" :href="proj.link" class="mt-link" target="_blank">{{ proj.link }}</a>
+            </div>
+          </div>
+        </section>
+
+        <section v-else-if="section === 'languages' && isSectionVisible(section)" class="mt-section">
+          <h2 class="mt-section-title">{{ t('languages.title') }}</h2>
+          <div class="mt-lang-list">
+            <div v-for="(lang, i) in store.data.languages" :key="i" class="mt-lang-item">
+              <span>{{ lang.name }}</span>
+              <span class="mt-lang-level">{{ lang.level ? (t(`languages.levels.${lang.level}`) || lang.level) : '' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <template v-else-if="section === 'customSections' && isSectionVisible(section)">
+          <section v-for="custom in store.data.customSections" :key="custom.id" class="mt-section">
+            <h2 class="mt-section-title">{{ custom.title }}</h2>
+            <p>{{ custom.content }}</p>
+          </section>
+        </template>
+      </template>
     </main>
   </div>
 </template>

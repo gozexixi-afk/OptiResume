@@ -21,7 +21,8 @@ export default {
   editor: {
     title: '简历编辑',
     collapse: '折叠编辑区',
-    expand: '展开编辑区'
+    expand: '展开编辑区',
+    moduleManager: '模块排序'
   },
   personal: {
     title: '个人信息',

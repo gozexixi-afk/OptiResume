@@ -57,6 +57,17 @@ export interface ResumeData {
   customSections: CustomSection[]
 }
 
+export type ResumeSectionKey =
+  | 'personal'
+  | 'objective'
+  | 'summary'
+  | 'experience'
+  | 'education'
+  | 'skills'
+  | 'projects'
+  | 'languages'
+  | 'customSections'
+
 export type AIProvider = 'deepseek' | 'zhipu' | 'qwen' | 'wenxin' | 'moonshot' | 'openai' | 'claude'
 
 export interface AIModelOption {

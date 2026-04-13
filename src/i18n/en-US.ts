@@ -21,7 +21,8 @@ export default {
   editor: {
     title: 'Resume Editor',
     collapse: 'Collapse Editor',
-    expand: 'Expand Editor'
+    expand: 'Expand Editor',
+    moduleManager: 'Section Order'
   },
   personal: {
     title: 'Personal Info',

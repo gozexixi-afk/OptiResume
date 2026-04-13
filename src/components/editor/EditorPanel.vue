@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import PersonalEditor from './PersonalEditor.vue'
-import ObjectiveEditor from './ObjectiveEditor.vue'
-import ExperienceEditor from './ExperienceEditor.vue'
-import EducationEditor from './EducationEditor.vue'
-import SkillsEditor from './SkillsEditor.vue'
-import ProjectsEditor from './ProjectsEditor.vue'
-import LanguagesEditor from './LanguagesEditor.vue'
-import SummaryEditor from './SummaryEditor.vue'
-import CustomSectionEditor from './CustomSectionEditor.vue'
+import SectionManager from './SectionManager.vue'
 
 const { t } = useI18n()
 </script>
@@ -19,15 +11,7 @@ const { t } = useI18n()
       <el-icon><EditPen /></el-icon>
       {{ t('editor.title') }}
     </h3>
-    <PersonalEditor />
-    <ObjectiveEditor />
-    <ExperienceEditor />
-    <EducationEditor />
-    <SkillsEditor />
-    <ProjectsEditor />
-    <LanguagesEditor />
-    <SummaryEditor />
-    <CustomSectionEditor />
+    <SectionManager />
   </div>
 </template>
 

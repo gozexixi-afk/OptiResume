@@ -1,15 +1,40 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import type { ResumeSectionKey } from '@/types/resume'
 
 const { t } = useI18n()
 const store = useResumeStore()
+const orderedSections = computed(() => store.sectionOrder.filter(key => key !== 'personal'))
+
+function isSectionVisible(section: ResumeSectionKey): boolean {
+  switch (section) {
+    case 'objective':
+      return !!store.data.objective
+    case 'summary':
+      return !!store.data.summary
+    case 'experience':
+      return store.data.experience.length > 0
+    case 'education':
+      return store.data.education.length > 0
+    case 'skills':
+      return store.data.skills.length > 0
+    case 'projects':
+      return store.data.projects.length > 0
+    case 'languages':
+      return store.data.languages.length > 0
+    case 'customSections':
+      return store.data.customSections.length > 0
+    default:
+      return false
+  }
+}
 </script>
 
 <template>
   <div class="minimal-template">
-    <!-- Header -->
-    <header class="mn-header">
+    <header v-if="store.hasSection('personal')" class="mn-header">
       <div class="mn-header-content">
         <h1 class="mn-name">{{ store.data.personal.name || t('personal.name') }}</h1>
         <p class="mn-title" v-if="store.data.personal.title">{{ store.data.personal.title }}</p>
@@ -22,81 +47,77 @@ const store = useResumeStore()
       </div>
     </header>
 
-    <!-- Objective -->
-    <section v-if="store.data.objective" class="mn-section">
-      <h2>{{ t('objective.title') }}</h2>
-      <p>{{ store.data.objective }}</p>
-    </section>
+    <template v-for="section in orderedSections" :key="section">
+      <section v-if="section === 'objective' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('objective.title') }}</h2>
+        <p>{{ store.data.objective }}</p>
+      </section>
 
-    <!-- Summary -->
-    <section v-if="store.data.summary" class="mn-section">
-      <h2>{{ t('summary.title') }}</h2>
-      <div v-html="store.data.summary"></div>
-    </section>
+      <section v-else-if="section === 'summary' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('summary.title') }}</h2>
+        <div v-html="store.data.summary"></div>
+      </section>
 
-    <!-- Experience -->
-    <section v-if="store.data.experience.length > 0" class="mn-section">
-      <h2>{{ t('experience.title') }}</h2>
-      <div v-for="exp in store.data.experience" :key="exp.id" class="mn-entry">
-        <div class="mn-entry-main">
-          <span class="mn-entry-title">{{ exp.position }}</span>
-          <span class="mn-sep" v-if="exp.company">|</span>
-          <span class="mn-entry-sub">{{ exp.company }}</span>
+      <section v-else-if="section === 'experience' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('experience.title') }}</h2>
+        <div v-for="exp in store.data.experience" :key="exp.id" class="mn-entry">
+          <div class="mn-entry-main">
+            <span class="mn-entry-title">{{ exp.position }}</span>
+            <span class="mn-sep" v-if="exp.company">|</span>
+            <span class="mn-entry-sub">{{ exp.company }}</span>
+          </div>
+          <span class="mn-entry-date">
+            {{ exp.startDate }} — {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
+          </span>
+          <p class="mn-entry-desc" v-if="exp.description">{{ exp.description }}</p>
         </div>
-        <span class="mn-entry-date">
-          {{ exp.startDate }} — {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
-        </span>
-        <p class="mn-entry-desc" v-if="exp.description">{{ exp.description }}</p>
-      </div>
-    </section>
+      </section>
 
-    <!-- Education -->
-    <section v-if="store.data.education.length > 0" class="mn-section">
-      <h2>{{ t('education.title') }}</h2>
-      <div v-for="edu in store.data.education" :key="edu.id" class="mn-entry">
-        <div class="mn-entry-main">
-          <span class="mn-entry-title">{{ edu.school }}</span>
-          <span class="mn-sep" v-if="edu.degree">|</span>
-          <span class="mn-entry-sub">{{ edu.degree }} {{ edu.field }}</span>
+      <section v-else-if="section === 'education' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('education.title') }}</h2>
+        <div v-for="edu in store.data.education" :key="edu.id" class="mn-entry">
+          <div class="mn-entry-main">
+            <span class="mn-entry-title">{{ edu.school }}</span>
+            <span class="mn-sep" v-if="edu.degree">|</span>
+            <span class="mn-entry-sub">{{ edu.degree }} {{ edu.field }}</span>
+          </div>
+          <span class="mn-entry-date">{{ edu.startDate }} — {{ edu.endDate }}</span>
         </div>
-        <span class="mn-entry-date">{{ edu.startDate }} — {{ edu.endDate }}</span>
-      </div>
-    </section>
+      </section>
 
-    <!-- Skills -->
-    <section v-if="store.data.skills.length > 0" class="mn-section">
-      <h2>{{ t('skills.title') }}</h2>
-      <p class="mn-skills-line">{{ store.data.skills.join('  ·  ') }}</p>
-    </section>
+      <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('skills.title') }}</h2>
+        <p class="mn-skills-line">{{ store.data.skills.join('  ·  ') }}</p>
+      </section>
 
-    <!-- Projects -->
-    <section v-if="store.data.projects.length > 0" class="mn-section">
-      <h2>{{ t('projects.title') }}</h2>
-      <div v-for="proj in store.data.projects" :key="proj.id" class="mn-entry">
-        <div class="mn-entry-main">
-          <span class="mn-entry-title">{{ proj.name }}</span>
-          <a v-if="proj.link" :href="proj.link" class="mn-link" target="_blank">{{ proj.link }}</a>
+      <section v-else-if="section === 'projects' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('projects.title') }}</h2>
+        <div v-for="proj in store.data.projects" :key="proj.id" class="mn-entry">
+          <div class="mn-entry-main">
+            <span class="mn-entry-title">{{ proj.name }}</span>
+            <a v-if="proj.link" :href="proj.link" class="mn-link" target="_blank">{{ proj.link }}</a>
+          </div>
+          <p class="mn-entry-desc" v-if="proj.description">{{ proj.description }}</p>
         </div>
-        <p class="mn-entry-desc" v-if="proj.description">{{ proj.description }}</p>
-      </div>
-    </section>
+      </section>
 
-    <!-- Languages -->
-    <section v-if="store.data.languages.length > 0" class="mn-section">
-      <h2>{{ t('languages.title') }}</h2>
-      <p class="mn-skills-line">
-        <template v-for="(lang, i) in store.data.languages" :key="i">
-          {{ lang.name }}<template v-if="lang.level"> ({{ t(`languages.levels.${lang.level}`) || lang.level }})</template>
-          <template v-if="i < store.data.languages.length - 1">  ·  </template>
-        </template>
-      </p>
-    </section>
+      <section v-else-if="section === 'languages' && isSectionVisible(section)" class="mn-section">
+        <h2>{{ t('languages.title') }}</h2>
+        <p class="mn-skills-line">
+          <template v-for="(lang, i) in store.data.languages" :key="i">
+            {{ lang.name }}<template v-if="lang.level"> ({{ t(`languages.levels.${lang.level}`) || lang.level }})</template>
+            <template v-if="i < store.data.languages.length - 1">  ·  </template>
+          </template>
+        </p>
+      </section>
 
-    <!-- Custom -->
-    <section v-for="section in store.data.customSections" :key="section.id" class="mn-section">
-      <h2>{{ section.title }}</h2>
-      <p>{{ section.content }}</p>
-    </section>
+      <template v-else-if="section === 'customSections' && isSectionVisible(section)">
+        <section v-for="custom in store.data.customSections" :key="custom.id" class="mn-section">
+          <h2>{{ custom.title }}</h2>
+          <p>{{ custom.content }}</p>
+        </section>
+      </template>
+    </template>
   </div>
 </template>
 
