@@ -8,12 +8,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import PreviewPanel from '@/components/preview/PreviewPanel.vue'
-import AIAssistant from '@/components/common/AIAssistant.vue'
 
 const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 const resumeStore = useResumeStore()
-const showAI = ref(false)
 const previewRef = ref<InstanceType<typeof PreviewPanel>>()
 
 watch(() => settingsStore.settings.theme, (theme) => {
@@ -87,12 +85,6 @@ function handleReset() {
         <span class="logo">{{ t('app.logo') }}</span>
       </div>
       <div class="header-right">
-        <el-tooltip :content="t('ai.title')">
-          <el-button circle @click="showAI = true">
-            <el-icon><MagicStick /></el-icon>
-          </el-button>
-        </el-tooltip>
-
         <el-tooltip :content="t('nav.undo')">
           <el-button circle :disabled="!resumeStore.canUndo" @click="handleUndo">
             <el-icon><RefreshLeft /></el-icon>
@@ -172,6 +164,5 @@ function handleReset() {
       </main>
     </div>
 
-    <AIAssistant v-model:visible="showAI" />
   </div>
 </template>

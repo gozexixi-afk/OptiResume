@@ -85,10 +85,30 @@ export interface AIConfig {
 
 export type TemplateType = 'classic' | 'modern' | 'minimal'
 
+export type InfoDisplayMode = 'text' | 'icon' | 'pure'
+export type HeaderAlignMode = 'left' | 'center' | 'right' | 'justify'
+
+export interface LayoutSettings {
+  fontFamily: string
+  fontSize: number
+  lineHeight: number
+  themeColor: string
+  headerAlign: HeaderAlignMode
+  infoDisplay: InfoDisplayMode
+  pagePaddingTop: number
+  pagePaddingRight: number
+  pagePaddingBottom: number
+  pagePaddingLeft: number
+  sectionSpacing: number
+  titleMarginTop: number
+  titleMarginBottom: number
+}
+
 export interface AppSettings {
   locale: 'zh-CN' | 'en-US'
   theme: 'light' | 'dark'
   template: TemplateType
   previewScale: number
   editorCollapsed: boolean
+  layout: LayoutSettings
 }

@@ -195,6 +195,22 @@ export const useResumeStore = defineStore('resume', () => {
     sectionOrder.value = sectionOrder.value.filter(item => item !== section)
   }
 
+  function restoreSection(section: ResumeSectionKey) {
+    if (sectionOrder.value.includes(section)) return
+    const targetIndex = DEFAULT_SECTION_ORDER.indexOf(section)
+    if (targetIndex < 0) return
+
+    let insertAt = sectionOrder.value.length
+    for (let i = 0; i < sectionOrder.value.length; i++) {
+      const current = sectionOrder.value[i]
+      if (DEFAULT_SECTION_ORDER.indexOf(current) > targetIndex) {
+        insertAt = i
+        break
+      }
+    }
+    sectionOrder.value.splice(insertAt, 0, section)
+  }
+
   function hasSection(section: ResumeSectionKey): boolean {
     return sectionOrder.value.includes(section)
   }
@@ -212,7 +228,7 @@ export const useResumeStore = defineStore('resume', () => {
     addLanguage, removeLanguage,
     addCustomSection, removeCustomSection,
     addSkill, removeSkill,
-    moveSection, removeSection, hasSection,
+    moveSection, removeSection, restoreSection, hasSection,
     importData, resetData
   }
 })

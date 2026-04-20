@@ -2,11 +2,20 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import { useSettingsStore } from '@/stores/settings'
 import type { ResumeSectionKey } from '@/types/resume'
 
 const { t } = useI18n()
 const store = useResumeStore()
+const settingsStore = useSettingsStore()
 const orderedSections = computed(() => store.sectionOrder.filter(key => key !== 'personal'))
+
+function splitToBulletLines(text: string): string[] {
+  return text
+    .split('\n')
+    .map(line => line.trim().replace(/^[•·\-]\s*/, ''))
+    .filter(Boolean)
+}
 
 function isSectionVisible(section: ResumeSectionKey): boolean {
   switch (section) {
@@ -30,23 +39,43 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
       return false
   }
 }
+
+const headerAlignClass = computed(() => `ct-align-${settingsStore.settings.layout.headerAlign}`)
+
+const contactList = computed(() => {
+  const p = store.data.personal
+  const info = [
+    { key: 'phone', value: p.phone, icon: '☎' },
+    { key: 'email', value: p.email, icon: '✉' },
+    { key: 'location', value: p.location, icon: '⌂' },
+    { key: 'website', value: p.website, icon: '🔗' }
+  ]
+  return info.filter(item => !!item.value)
+})
 </script>
 
 <template>
   <div class="classic-template">
-    <header v-if="store.hasSection('personal')" class="ct-header">
-      <div class="ct-avatar" v-if="store.data.personal.avatar">
-        <img :src="store.data.personal.avatar" alt="avatar" />
-      </div>
+    <header v-if="store.hasSection('personal')" class="ct-header" :class="headerAlignClass">
       <div class="ct-info">
         <h1 class="ct-name">{{ store.data.personal.name || t('personal.name') }}</h1>
         <p class="ct-title" v-if="store.data.personal.title">{{ store.data.personal.title }}</p>
         <div class="ct-contact">
-          <span v-if="store.data.personal.email">📧 {{ store.data.personal.email }}</span>
-          <span v-if="store.data.personal.phone">📱 {{ store.data.personal.phone }}</span>
-          <span v-if="store.data.personal.location">📍 {{ store.data.personal.location }}</span>
-          <span v-if="store.data.personal.website">🔗 {{ store.data.personal.website }}</span>
+          <span v-for="item in contactList" :key="item.key">
+            <template v-if="settingsStore.settings.layout.infoDisplay === 'icon'">
+              {{ item.icon }} {{ item.value }}
+            </template>
+            <template v-else-if="settingsStore.settings.layout.infoDisplay === 'text'">
+              {{ t(`personal.${item.key}`) }}: {{ item.value }}
+            </template>
+            <template v-else>
+              {{ item.value }}
+            </template>
+          </span>
         </div>
+      </div>
+      <div class="ct-avatar" v-if="store.data.personal.avatar">
+        <img :src="store.data.personal.avatar" alt="avatar" />
       </div>
     </header>
 
@@ -69,14 +98,16 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <div v-for="exp in store.data.experience" :key="exp.id" class="ct-item">
           <div class="ct-item-header">
             <div>
-              <strong>{{ exp.position }}</strong>
-              <span class="ct-company" v-if="exp.company"> · {{ exp.company }}</span>
+              <strong class="ct-main-title">{{ exp.position }}</strong>
+              <span class="ct-company" v-if="exp.company">{{ exp.company }}</span>
             </div>
             <span class="ct-date">
               {{ exp.startDate }} - {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
             </span>
           </div>
-          <p class="ct-desc" v-if="exp.description">{{ exp.description }}</p>
+          <ul v-if="exp.description" class="ct-bullets">
+            <li v-for="(line, idx) in splitToBulletLines(exp.description)" :key="idx">{{ line }}</li>
+          </ul>
         </div>
       </section>
 
@@ -86,8 +117,8 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <div v-for="edu in store.data.education" :key="edu.id" class="ct-item">
           <div class="ct-item-header">
             <div>
-              <strong>{{ edu.school }}</strong>
-              <span v-if="edu.degree || edu.field"> · {{ edu.degree }} {{ edu.field }}</span>
+              <strong class="ct-main-title">{{ edu.school }}</strong>
+              <span class="ct-company" v-if="edu.degree || edu.field">{{ edu.degree }} {{ edu.field }}</span>
             </div>
             <span class="ct-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
           </div>
@@ -97,9 +128,9 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
       <section v-else-if="section === 'skills' && isSectionVisible(section)" class="ct-section">
         <h2 class="ct-section-title">{{ t('skills.title') }}</h2>
         <div class="ct-divider"></div>
-        <div class="ct-skills">
-          <span v-for="(skill, i) in store.data.skills" :key="i" class="ct-skill-tag">{{ skill }}</span>
-        </div>
+        <ul class="ct-bullets">
+          <li v-for="(skill, i) in store.data.skills" :key="i">{{ skill }}</li>
+        </ul>
       </section>
 
       <section v-else-if="section === 'projects' && isSectionVisible(section)" class="ct-section">
@@ -107,10 +138,12 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <div class="ct-divider"></div>
         <div v-for="proj in store.data.projects" :key="proj.id" class="ct-item">
           <div class="ct-item-header">
-            <strong>{{ proj.name }}</strong>
+            <strong class="ct-main-title">{{ proj.name }}</strong>
             <a v-if="proj.link" :href="proj.link" class="ct-link" target="_blank">{{ proj.link }}</a>
           </div>
-          <p class="ct-desc" v-if="proj.description">{{ proj.description }}</p>
+          <ul v-if="proj.description" class="ct-bullets">
+            <li v-for="(line, idx) in splitToBulletLines(proj.description)" :key="idx">{{ line }}</li>
+          </ul>
         </div>
       </section>
 
@@ -128,7 +161,9 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <section v-for="custom in store.data.customSections" :key="custom.id" class="ct-section">
           <h2 class="ct-section-title">{{ custom.title }}</h2>
           <div class="ct-divider"></div>
-          <p class="ct-text">{{ custom.content }}</p>
+          <ul class="ct-bullets">
+            <li v-for="(line, idx) in splitToBulletLines(custom.content)" :key="idx">{{ line }}</li>
+          </ul>
         </section>
       </template>
     </template>
@@ -137,31 +172,58 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
 
 <style scoped lang="scss">
 .classic-template {
-  padding: 32px 36px;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  color: #333;
-  font-size: 13px;
-  line-height: 1.6;
+  padding: var(--or-page-padding-top, 28px) var(--or-page-padding-right, 34px)
+    var(--or-page-padding-bottom, 28px) var(--or-page-padding-left, 34px);
+  font-family: var(--or-resume-font-family, 'PingFang SC', 'Microsoft YaHei', sans-serif);
+  color: var(--or-theme-color, #1f1f1f);
+  font-size: var(--or-resume-font-size, 13px);
+  line-height: var(--or-resume-line-height, 1.5);
 }
 
 .ct-header {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #2c3e50;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.ct-align-left {
+  text-align: left;
+}
+
+.ct-align-center {
+  text-align: center;
+  .ct-contact {
+    justify-content: center;
+  }
+}
+
+.ct-align-right {
+  text-align: right;
+  .ct-contact {
+    justify-content: flex-end;
+  }
+}
+
+.ct-align-justify {
+  .ct-info {
+    width: 100%;
+  }
+  .ct-contact {
+    justify-content: space-between;
+  }
 }
 
 .ct-avatar {
   flex-shrink: 0;
 
   img {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
+    width: 72px;
+    height: 92px;
+    border-radius: 2px;
     object-fit: cover;
-    border: 2px solid #2c3e50;
+    border: 1px solid #ddd;
   }
 }
 
@@ -170,63 +232,77 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
 }
 
 .ct-name {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #111;
   margin: 0 0 4px;
+  letter-spacing: 1px;
 }
 
 .ct-title {
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 8px;
+  font-size: 15px;
+  color: #222;
+  margin: 0 0 6px;
+  font-weight: 600;
 }
 
 .ct-contact {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   font-size: 12px;
-  color: #555;
+  color: #2f2f2f;
+
+  span:not(:last-child)::after {
+    content: '  |';
+    color: #777;
+    margin-left: 8px;
+  }
 }
 
 .ct-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--or-section-spacing, 12px);
 }
 
 .ct-section-title {
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 700;
-  color: #2c3e50;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 0 0 4px;
+  color: #111;
+  margin: var(--or-title-margin-top, 0) 0 var(--or-title-margin-bottom, 6px);
 }
 
 .ct-divider {
   height: 1px;
-  background: #bdc3c7;
-  margin-bottom: 10px;
+  background: #111;
+  margin-bottom: 8px;
 }
 
 .ct-item {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .ct-item-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 4px;
+  align-items: flex-start;
+  margin-bottom: 3px;
+  gap: 8px;
+}
+
+.ct-main-title {
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .ct-company {
-  color: #666;
+  color: #3a3a3a;
+  margin-left: 8px;
+  font-size: 13px;
 }
 
 .ct-date {
   font-size: 12px;
-  color: #888;
+  color: #444;
   white-space: nowrap;
 }
 
@@ -237,36 +313,33 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
 }
 
 .ct-text {
-  color: #555;
+  color: #2f2f2f;
 }
 
-.ct-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.ct-bullets {
+  margin: 0;
+  padding-left: 18px;
 
-.ct-skill-tag {
-  background: #ecf0f1;
-  color: #2c3e50;
-  padding: 3px 10px;
-  border-radius: 3px;
-  font-size: 12px;
+  li {
+    margin-bottom: 2px;
+    color: #2f2f2f;
+    white-space: pre-line;
+  }
 }
 
 .ct-link {
   font-size: 12px;
-  color: #3498db;
+  color: #444;
   text-decoration: none;
 }
 
 .ct-langs {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ct-lang {
-  color: #555;
+  color: #333;
 }
 </style>
