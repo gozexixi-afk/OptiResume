@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import type { ResumeData, ResumeSectionKey } from '@/types/resume'
+import type { ResumeData, ResumeSectionKey, SkillItem } from '@/types/resume'
 import { v4 as uuidv4 } from 'uuid'
 
 const STORAGE_KEY = 'optiresume-data'
 const SECTION_ORDER_KEY = 'optiresume-section-order'
+const SECTION_TITLE_KEY = 'optiresume-section-title-overrides'
 const MAX_HISTORY = 20
 const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
   'personal',
@@ -23,8 +24,13 @@ function createDefaultResume(): ResumeData {
     personal: {
       name: '',
       title: '',
+      status: '',
+      expectedLocation: '',
+      expectedSalary: '',
       email: '',
       phone: '',
+      wechat: '',
+      github: '',
       location: '',
       website: '',
       avatar: ''
@@ -45,7 +51,15 @@ function loadFromStorage(): ResumeData {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      return { ...createDefaultResume(), ...parsed }
+      const merged = { ...createDefaultResume(), ...parsed }
+      if (Array.isArray(merged.skills) && merged.skills.length && typeof merged.skills[0] === 'string') {
+        merged.skills = (merged.skills as string[]).map((name) => ({
+          id: uuidv4(),
+          name,
+          description: ''
+        }))
+      }
+      return merged
     }
   } catch { /* ignore */ }
   return createDefaultResume()
@@ -65,9 +79,25 @@ function loadSectionOrder(): ResumeSectionKey[] {
   return [...DEFAULT_SECTION_ORDER]
 }
 
+function loadSectionTitleOverrides(): Partial<Record<ResumeSectionKey, string>> {
+  try {
+    const raw = localStorage.getItem(SECTION_TITLE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string>
+      const result: Partial<Record<ResumeSectionKey, string>> = {}
+      for (const key of DEFAULT_SECTION_ORDER) {
+        if (typeof parsed[key] === 'string') result[key] = parsed[key]
+      }
+      return result
+    }
+  } catch { /* ignore */ }
+  return {}
+}
+
 export const useResumeStore = defineStore('resume', () => {
   const data = ref<ResumeData>(loadFromStorage())
   const sectionOrder = ref<ResumeSectionKey[]>(loadSectionOrder())
+  const sectionTitleOverrides = ref<Partial<Record<ResumeSectionKey, string>>>(loadSectionTitleOverrides())
   const history = ref<ResumeData[]>([])
   const canUndo = computed(() => history.value.length > 0)
 
@@ -76,6 +106,9 @@ export const useResumeStore = defineStore('resume', () => {
   }, { deep: true })
   watch(sectionOrder, (val) => {
     localStorage.setItem(SECTION_ORDER_KEY, JSON.stringify(val))
+  }, { deep: true })
+  watch(sectionTitleOverrides, (val) => {
+    localStorage.setItem(SECTION_TITLE_KEY, JSON.stringify(val))
   }, { deep: true })
 
   function pushHistory() {
@@ -109,10 +142,15 @@ export const useResumeStore = defineStore('resume', () => {
     data.value.education.push({
       id: uuidv4(),
       school: '',
+      major: '',
       degree: '',
       field: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      schoolType: '',
+      college: '',
+      city: '',
+      campusExperience: ''
     })
   }
 
@@ -124,6 +162,10 @@ export const useResumeStore = defineStore('resume', () => {
     data.value.projects.push({
       id: uuidv4(),
       name: '',
+      role: '',
+      city: '',
+      startDate: '',
+      endDate: '',
       description: '',
       link: ''
     })
@@ -153,14 +195,24 @@ export const useResumeStore = defineStore('resume', () => {
     data.value.customSections = data.value.customSections.filter(s => s.id !== id)
   }
 
-  function addSkill(skill: string) {
-    if (skill && !data.value.skills.includes(skill)) {
-      data.value.skills.push(skill)
-    }
+  function addSkill() {
+    data.value.skills.push({
+      id: uuidv4(),
+      name: '',
+      description: ''
+    })
   }
 
-  function removeSkill(index: number) {
-    data.value.skills.splice(index, 1)
+  function removeSkill(id: string) {
+    data.value.skills = data.value.skills.filter(skill => skill.id !== id)
+  }
+
+  function normalizeSkills(skills: SkillItem[]) {
+    data.value.skills = skills.map(item => ({
+      id: item.id || uuidv4(),
+      name: item.name || '',
+      description: item.description || ''
+    }))
   }
 
   function importData(newData: ResumeData) {
@@ -215,9 +267,24 @@ export const useResumeStore = defineStore('resume', () => {
     return sectionOrder.value.includes(section)
   }
 
+  function getSectionTitle(section: ResumeSectionKey, fallback: string): string {
+    const custom = sectionTitleOverrides.value[section]?.trim()
+    return custom || fallback
+  }
+
+  function setSectionTitle(section: ResumeSectionKey, title: string) {
+    const trimmed = title.trim()
+    if (!trimmed) {
+      delete sectionTitleOverrides.value[section]
+      return
+    }
+    sectionTitleOverrides.value[section] = trimmed
+  }
+
   return {
     data,
     sectionOrder,
+    sectionTitleOverrides,
     history,
     canUndo,
     pushHistory,
@@ -227,8 +294,9 @@ export const useResumeStore = defineStore('resume', () => {
     addProject, removeProject,
     addLanguage, removeLanguage,
     addCustomSection, removeCustomSection,
-    addSkill, removeSkill,
+    addSkill, removeSkill, normalizeSkills,
     moveSection, removeSection, restoreSection, hasSection,
+    getSectionTitle, setSectionTitle,
     importData, resetData
   }
 })

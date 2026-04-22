@@ -17,6 +17,10 @@ function splitToBulletLines(text: string): string[] {
     .filter(Boolean)
 }
 
+function isHtmlContent(text: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(text)
+}
+
 function isSectionVisible(section: ResumeSectionKey): boolean {
   switch (section) {
     case 'objective':
@@ -47,6 +51,8 @@ const contactList = computed(() => {
   const info = [
     { key: 'phone', value: p.phone, icon: '☎' },
     { key: 'email', value: p.email, icon: '✉' },
+    { key: 'wechat', value: p.wechat, icon: '💬' },
+    { key: 'github', value: p.github, icon: '⌘' },
     { key: 'location', value: p.location, icon: '⌂' },
     { key: 'website', value: p.website, icon: '🔗' }
   ]
@@ -83,7 +89,8 @@ const contactList = computed(() => {
       <section v-if="section === 'objective' && isSectionVisible(section)" class="ct-section">
         <h2 class="ct-section-title">{{ t('objective.title') }}</h2>
         <div class="ct-divider"></div>
-        <p class="ct-text">{{ store.data.objective }}</p>
+        <div v-if="isHtmlContent(store.data.objective)" class="ct-rich-text" v-html="store.data.objective"></div>
+        <p v-else class="ct-text">{{ store.data.objective }}</p>
       </section>
 
       <section v-else-if="section === 'summary' && isSectionVisible(section)" class="ct-section">
@@ -105,43 +112,74 @@ const contactList = computed(() => {
               {{ exp.startDate }} - {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
             </span>
           </div>
-          <ul v-if="exp.description" class="ct-bullets">
+          <div
+            v-if="exp.description && isHtmlContent(exp.description)"
+            class="ct-rich-text"
+            v-html="exp.description"
+          ></div>
+          <ul v-else-if="exp.description" class="ct-bullets">
             <li v-for="(line, idx) in splitToBulletLines(exp.description)" :key="idx">{{ line }}</li>
           </ul>
         </div>
       </section>
 
       <section v-else-if="section === 'education' && isSectionVisible(section)" class="ct-section">
-        <h2 class="ct-section-title">{{ t('education.title') }}</h2>
+        <h2 class="ct-section-title">{{ store.getSectionTitle('education', t('education.title')) }}</h2>
         <div class="ct-divider"></div>
         <div v-for="edu in store.data.education" :key="edu.id" class="ct-item">
           <div class="ct-item-header">
             <div>
               <strong class="ct-main-title">{{ edu.school }}</strong>
-              <span class="ct-company" v-if="edu.degree || edu.field">{{ edu.degree }} {{ edu.field }}</span>
+              <span class="ct-company" v-if="edu.major || edu.degree">{{ edu.major || edu.field }} {{ edu.degree }}</span>
             </div>
             <span class="ct-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
           </div>
+          <p class="ct-text" v-if="edu.schoolType || edu.college || edu.city">
+            {{ [edu.schoolType, edu.college, edu.city].filter(Boolean).join(' · ') }}
+          </p>
+          <div
+            v-if="edu.campusExperience && isHtmlContent(edu.campusExperience)"
+            class="ct-rich-text"
+            v-html="edu.campusExperience"
+          ></div>
+          <ul v-else-if="edu.campusExperience" class="ct-bullets">
+            <li v-for="(line, idx) in splitToBulletLines(edu.campusExperience)" :key="idx">{{ line }}</li>
+          </ul>
         </div>
       </section>
 
       <section v-else-if="section === 'skills' && isSectionVisible(section)" class="ct-section">
-        <h2 class="ct-section-title">{{ t('skills.title') }}</h2>
+        <h2 class="ct-section-title">{{ store.getSectionTitle('skills', t('skills.title')) }}</h2>
         <div class="ct-divider"></div>
         <ul class="ct-bullets">
-          <li v-for="(skill, i) in store.data.skills" :key="i">{{ skill }}</li>
+          <li v-for="(skill, i) in store.data.skills" :key="skill.id || i">
+            <span class="ct-main-title">{{ skill.name }}</span>
+            <template v-if="skill.description">
+              ：<span v-if="!isHtmlContent(skill.description)">{{ skill.description }}</span>
+            </template>
+            <div v-if="skill.description && isHtmlContent(skill.description)" class="ct-rich-text" v-html="skill.description"></div>
+          </li>
         </ul>
       </section>
 
       <section v-else-if="section === 'projects' && isSectionVisible(section)" class="ct-section">
-        <h2 class="ct-section-title">{{ t('projects.title') }}</h2>
+        <h2 class="ct-section-title">{{ store.getSectionTitle('projects', t('projects.title')) }}</h2>
         <div class="ct-divider"></div>
         <div v-for="proj in store.data.projects" :key="proj.id" class="ct-item">
           <div class="ct-item-header">
-            <strong class="ct-main-title">{{ proj.name }}</strong>
+            <div>
+              <strong class="ct-main-title">{{ proj.name }}</strong>
+              <span class="ct-company" v-if="proj.role || proj.city">{{ [proj.role, proj.city].filter(Boolean).join(' · ') }}</span>
+            </div>
             <a v-if="proj.link" :href="proj.link" class="ct-link" target="_blank">{{ proj.link }}</a>
           </div>
-          <ul v-if="proj.description" class="ct-bullets">
+          <p class="ct-text" v-if="proj.startDate || proj.endDate">{{ proj.startDate }} - {{ proj.endDate }}</p>
+          <div
+            v-if="proj.description && isHtmlContent(proj.description)"
+            class="ct-rich-text"
+            v-html="proj.description"
+          ></div>
+          <ul v-else-if="proj.description" class="ct-bullets">
             <li v-for="(line, idx) in splitToBulletLines(proj.description)" :key="idx">{{ line }}</li>
           </ul>
         </div>
@@ -161,7 +199,12 @@ const contactList = computed(() => {
         <section v-for="custom in store.data.customSections" :key="custom.id" class="ct-section">
           <h2 class="ct-section-title">{{ custom.title }}</h2>
           <div class="ct-divider"></div>
-          <ul class="ct-bullets">
+          <div
+            v-if="custom.content && isHtmlContent(custom.content)"
+            class="ct-rich-text"
+            v-html="custom.content"
+          ></div>
+          <ul v-else class="ct-bullets">
             <li v-for="(line, idx) in splitToBulletLines(custom.content)" :key="idx">{{ line }}</li>
           </ul>
         </section>
@@ -232,7 +275,7 @@ const contactList = computed(() => {
 }
 
 .ct-name {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
   color: #111;
   margin: 0 0 4px;
@@ -265,7 +308,7 @@ const contactList = computed(() => {
 }
 
 .ct-section-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #111;
   margin: var(--or-title-margin-top, 0) 0 var(--or-title-margin-bottom, 6px);
@@ -324,6 +367,23 @@ const contactList = computed(() => {
     margin-bottom: 2px;
     color: #2f2f2f;
     white-space: pre-line;
+  }
+}
+
+.ct-rich-text {
+  color: #2f2f2f;
+
+  :deep(p) {
+    margin: 0 0 4px;
+  }
+
+  :deep(ul), :deep(ol) {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  :deep(li) {
+    margin-bottom: 2px;
   }
 }
 

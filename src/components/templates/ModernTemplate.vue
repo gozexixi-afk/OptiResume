@@ -8,6 +8,10 @@ const { t } = useI18n()
 const store = useResumeStore()
 const orderedSections = computed(() => store.sectionOrder.filter(key => key !== 'personal'))
 
+function isHtmlContent(text: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(text)
+}
+
 function isSectionVisible(section: ResumeSectionKey): boolean {
   switch (section) {
     case 'objective':
@@ -60,7 +64,8 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
       <template v-for="section in orderedSections" :key="section">
         <section v-if="section === 'objective' && isSectionVisible(section)" class="mt-section">
           <h2 class="mt-section-title">{{ t('objective.title') }}</h2>
-          <p>{{ store.data.objective }}</p>
+          <div v-if="isHtmlContent(store.data.objective)" class="mt-rich-text" v-html="store.data.objective"></div>
+          <p v-else>{{ store.data.objective }}</p>
         </section>
 
         <section v-else-if="section === 'summary' && isSectionVisible(section)" class="mt-section">
@@ -80,13 +85,14 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
                 </span>
               </div>
               <p class="mt-company" v-if="exp.company">{{ exp.company }}</p>
-              <p class="mt-desc" v-if="exp.description">{{ exp.description }}</p>
+              <div v-if="exp.description && isHtmlContent(exp.description)" class="mt-desc mt-rich-text" v-html="exp.description"></div>
+              <p class="mt-desc" v-else-if="exp.description">{{ exp.description }}</p>
             </div>
           </div>
         </section>
 
         <section v-else-if="section === 'education' && isSectionVisible(section)" class="mt-section">
-          <h2 class="mt-section-title">{{ t('education.title') }}</h2>
+          <h2 class="mt-section-title">{{ store.getSectionTitle('education', t('education.title')) }}</h2>
           <div v-for="edu in store.data.education" :key="edu.id" class="mt-item">
             <div class="mt-item-dot"></div>
             <div class="mt-item-content">
@@ -94,25 +100,28 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
                 <h3>{{ edu.school }}</h3>
                 <span class="mt-date">{{ edu.startDate }} - {{ edu.endDate }}</span>
               </div>
-              <p class="mt-company" v-if="edu.degree || edu.field">{{ edu.degree }} · {{ edu.field }}</p>
+              <p class="mt-company" v-if="edu.major || edu.degree">{{ edu.major || edu.field }} · {{ edu.degree }}</p>
             </div>
           </div>
         </section>
 
         <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mt-section">
-          <h2 class="mt-section-title">{{ t('skills.title') }}</h2>
+          <h2 class="mt-section-title">{{ store.getSectionTitle('skills', t('skills.title')) }}</h2>
           <div class="mt-skills">
-            <span v-for="(skill, i) in store.data.skills" :key="i" class="mt-skill">{{ skill }}</span>
+            <span v-for="(skill, i) in store.data.skills" :key="skill.id || i" class="mt-skill">{{ skill.name }}</span>
           </div>
         </section>
 
         <section v-else-if="section === 'projects' && isSectionVisible(section)" class="mt-section">
-          <h2 class="mt-section-title">{{ t('projects.title') }}</h2>
+          <h2 class="mt-section-title">{{ store.getSectionTitle('projects', t('projects.title')) }}</h2>
           <div v-for="proj in store.data.projects" :key="proj.id" class="mt-item">
             <div class="mt-item-dot"></div>
             <div class="mt-item-content">
               <h3>{{ proj.name }}</h3>
-              <p class="mt-desc" v-if="proj.description">{{ proj.description }}</p>
+              <p class="mt-company" v-if="proj.role || proj.city">{{ [proj.role, proj.city].filter(Boolean).join(' · ') }}</p>
+              <p class="mt-date" v-if="proj.startDate || proj.endDate">{{ proj.startDate }} - {{ proj.endDate }}</p>
+              <div v-if="proj.description && isHtmlContent(proj.description)" class="mt-desc mt-rich-text" v-html="proj.description"></div>
+              <p class="mt-desc" v-else-if="proj.description">{{ proj.description }}</p>
               <a v-if="proj.link" :href="proj.link" class="mt-link" target="_blank">{{ proj.link }}</a>
             </div>
           </div>
@@ -131,7 +140,8 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <template v-else-if="section === 'customSections' && isSectionVisible(section)">
           <section v-for="custom in store.data.customSections" :key="custom.id" class="mt-section">
             <h2 class="mt-section-title">{{ custom.title }}</h2>
-            <p>{{ custom.content }}</p>
+            <div v-if="isHtmlContent(custom.content)" class="mt-rich-text" v-html="custom.content"></div>
+            <p v-else>{{ custom.content }}</p>
           </section>
         </template>
       </template>
@@ -318,5 +328,15 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
   font-size: 11px;
   color: #3182ce;
   text-decoration: none;
+}
+
+.mt-rich-text {
+  :deep(p) {
+    margin: 0 0 6px;
+  }
+  :deep(ul), :deep(ol) {
+    margin: 0;
+    padding-left: 18px;
+  }
 }
 </style>

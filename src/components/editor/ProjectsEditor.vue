@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 const { t } = useI18n()
 const store = useResumeStore()
@@ -8,19 +9,6 @@ const store = useResumeStore()
 
 <template>
   <el-card class="section-card" shadow="hover">
-    <template #header>
-      <div class="section-header">
-        <span class="section-title">
-          <el-icon><FolderOpened /></el-icon>
-          {{ t('projects.title') }}
-        </span>
-        <el-button type="primary" size="small" @click="store.addProject">
-          <el-icon><Plus /></el-icon>
-          {{ t('projects.add') }}
-        </el-button>
-      </div>
-    </template>
-
     <el-empty v-if="store.data.projects.length === 0" :description="t('projects.empty')" />
 
     <div
@@ -34,26 +22,94 @@ const store = useResumeStore()
         </el-button>
       </div>
 
-      <el-form label-position="top" size="default">
-        <el-form-item :label="t('projects.name')">
-          <el-input v-model="proj.name" :placeholder="t('projects.namePlaceholder')" />
-        </el-form-item>
+      <el-form label-position="top" size="default" class="module-form">
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item :label="t('projects.name')">
+              <el-input v-model="proj.name" :placeholder="t('projects.namePlaceholder')" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
+            <el-form-item :label="t('projects.period')">
+              <div class="time-range">
+                <el-date-picker
+                  v-model="proj.startDate"
+                  type="month"
+                  format="YYYY-MM"
+                  value-format="YYYY-MM"
+                  style="width: 100%"
+                />
+                <span class="dash">-</span>
+                <el-date-picker
+                  v-model="proj.endDate"
+                  type="month"
+                  format="YYYY-MM"
+                  value-format="YYYY-MM"
+                  style="width: 100%"
+                />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item :label="t('projects.role')">
+              <el-input v-model="proj.role" :placeholder="t('projects.rolePlaceholder')" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item :label="t('projects.city')">
+              <el-input v-model="proj.city" :placeholder="t('projects.cityPlaceholder')" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item :label="t('projects.link')">
+              <el-input v-model="proj.link" :placeholder="t('projects.linkPlaceholder')" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-form-item :label="t('projects.description')">
-          <el-input
-            v-model="proj.description"
-            type="textarea"
-            :rows="3"
-            :placeholder="t('projects.descriptionPlaceholder')"
-          />
-        </el-form-item>
-
-        <el-form-item :label="t('projects.link')">
-          <el-input v-model="proj.link" :placeholder="t('projects.linkPlaceholder')">
-            <template #prefix><el-icon><Link /></el-icon></template>
-          </el-input>
+          <RichTextEditor v-model="proj.description" :placeholder="t('projects.descriptionPlaceholder')" class="fixed-editor" />
         </el-form-item>
       </el-form>
     </div>
+    <div class="module-footer">
+      <el-button type="primary" @click="store.addProject">
+        <el-icon><Plus /></el-icon>
+        {{ t('projects.add') }}
+      </el-button>
+    </div>
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.dash {
+  color: var(--el-text-color-secondary);
+}
+
+.module-form {
+  padding-top: 2px;
+}
+
+.module-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 4px;
+  border-top: 1px dashed var(--el-border-color-lighter);
+}
+
+.fixed-editor {
+  :deep(.ProseMirror) {
+    min-height: 170px;
+  }
+}
+</style>

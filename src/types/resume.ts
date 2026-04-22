@@ -1,8 +1,13 @@
 export interface PersonalInfo {
   name: string
   title: string
+  status: string
+  expectedLocation: string
+  expectedSalary: string
   email: string
   phone: string
+  wechat: string
+  github: string
   location: string
   website: string
   avatar: string
@@ -21,17 +26,32 @@ export interface ExperienceItem {
 export interface EducationItem {
   id: string
   school: string
+  major: string
   degree: string
   field: string
   startDate: string
   endDate: string
+  schoolType: string
+  college: string
+  city: string
+  campusExperience: string
 }
 
 export interface ProjectItem {
   id: string
   name: string
+  role: string
+  city: string
+  startDate: string
+  endDate: string
   description: string
   link: string
+}
+
+export interface SkillItem {
+  id: string
+  name: string
+  description: string
 }
 
 export interface LanguageItem {
@@ -51,7 +71,7 @@ export interface ResumeData {
   summary: string
   experience: ExperienceItem[]
   education: EducationItem[]
-  skills: string[]
+  skills: SkillItem[]
   projects: ProjectItem[]
   languages: LanguageItem[]
   customSections: CustomSection[]

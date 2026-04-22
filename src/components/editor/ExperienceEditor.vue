@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 const { t } = useI18n()
 const store = useResumeStore()
@@ -14,10 +15,9 @@ const store = useResumeStore()
           <el-icon><Briefcase /></el-icon>
           {{ t('experience.title') }}
         </span>
-        <el-button type="primary" size="small" @click="store.addExperience">
-          <el-icon><Plus /></el-icon>
-          {{ t('experience.add') }}
-        </el-button>
+        <div class="section-extra">
+          <el-icon><EditPen /></el-icon>
+        </div>
       </div>
     </template>
 
@@ -94,14 +94,21 @@ const store = useResumeStore()
         </el-row>
 
         <el-form-item :label="t('experience.description')">
-          <el-input
-            v-model="exp.description"
-            type="textarea"
-            :rows="3"
-            :placeholder="t('experience.descriptionPlaceholder')"
-          />
+          <RichTextEditor v-model="exp.description" :placeholder="t('experience.descriptionPlaceholder')" />
         </el-form-item>
       </el-form>
     </div>
+    <el-button type="primary" @click="store.addExperience">
+      <el-icon><Plus /></el-icon>
+      {{ t('experience.add') }}
+    </el-button>
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.section-extra {
+  position: absolute;
+  right: 0;
+  color: var(--el-text-color-secondary);
+}
+</style>

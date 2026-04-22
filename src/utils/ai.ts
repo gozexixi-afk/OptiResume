@@ -222,7 +222,7 @@ export const AI_PROMPTS = {
 ${JSON_OUTPUT_RULE}`,
 
   generate: `你是一个专业的简历撰写专家。根据以下职位描述，帮助生成匹配的简历内容。
-请返回 JSON 格式的简历数据，包含以下字段：objective（求职意向）、summary（自我评价）、skills（技能列表，字符串数组）。
+请返回 JSON 格式的简历数据，包含以下字段：objective（求职意向）、summary（自我评价）、skills（技能列表，对象数组，每项含 name/description）。
 ${JSON_OUTPUT_RULE}`,
 
   translate_en: `你是一个专业翻译。请将以下简历内容翻译为英文。
@@ -236,13 +236,13 @@ ${JSON_OUTPUT_RULE}`,
   parse: `你是一个简历解析专家。请将以下简历文本解析为结构化的 JSON 数据。
 JSON 结构如下：
 {
-  "personal": { "name": "", "title": "", "email": "", "phone": "", "location": "", "website": "" },
+  "personal": { "name": "", "title": "", "status": "", "expectedLocation": "", "expectedSalary": "", "email": "", "phone": "", "wechat": "", "github": "", "location": "", "website": "" },
   "objective": "",
   "summary": "",
   "experience": [{ "company": "", "position": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "description": "", "isCurrent": false }],
-  "education": [{ "school": "", "degree": "", "field": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM" }],
-  "skills": [],
-  "projects": [{ "name": "", "description": "", "link": "" }],
+  "education": [{ "school": "", "major": "", "degree": "", "field": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "schoolType": "", "college": "", "city": "", "campusExperience": "" }],
+  "skills": [{ "name": "", "description": "" }],
+  "projects": [{ "name": "", "role": "", "city": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "description": "", "link": "" }],
   "languages": [{ "name": "", "level": "" }]
 }
 尽可能从文本中提取信息填充各字段。

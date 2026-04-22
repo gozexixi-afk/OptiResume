@@ -16,10 +16,9 @@ const levelOptions = ['native', 'fluent', 'advanced', 'intermediate', 'basic'] a
           <el-icon><ChatDotSquare /></el-icon>
           {{ t('languages.title') }}
         </span>
-        <el-button type="primary" size="small" @click="store.addLanguage">
-          <el-icon><Plus /></el-icon>
-          {{ t('languages.add') }}
-        </el-button>
+        <div class="section-extra">
+          <el-icon><EditPen /></el-icon>
+        </div>
       </div>
     </template>
 
@@ -58,5 +57,17 @@ const levelOptions = ['native', 'fluent', 'advanced', 'intermediate', 'basic'] a
         </el-row>
       </el-form>
     </div>
+    <el-button type="primary" @click="store.addLanguage">
+      <el-icon><Plus /></el-icon>
+      {{ t('languages.add') }}
+    </el-button>
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.section-extra {
+  position: absolute;
+  right: 0;
+  color: var(--el-text-color-secondary);
+}
+</style>

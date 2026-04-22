@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
 import type { ResumeSectionKey } from '@/types/resume'
+import { ElMessageBox } from 'element-plus'
 import PersonalEditor from './PersonalEditor.vue'
 import ObjectiveEditor from './ObjectiveEditor.vue'
 import ExperienceEditor from './ExperienceEditor.vue'
@@ -32,7 +33,7 @@ const sections = computed(() => store.sectionOrder.map((key, index) => ({
   key,
   index,
   icon: sectionMeta[key].icon,
-  label: t(sectionMeta[key].labelKey)
+  label: store.getSectionTitle(key, t(sectionMeta[key].labelKey))
 })))
 
 const editorComponentMap: Record<ResumeSectionKey, unknown> = {
@@ -60,19 +61,20 @@ watch(
   },
   { immediate: true }
 )
+
+function editSectionTitle(section: ResumeSectionKey, current: string) {
+  ElMessageBox.prompt('请输入模块标题（留空恢复默认）', '编辑标题', {
+    inputValue: current,
+    confirmButtonText: t('actions.confirm'),
+    cancelButtonText: t('actions.cancel')
+  }).then(({ value }) => {
+    store.setSectionTitle(section, value)
+  }).catch(() => {})
+}
 </script>
 
 <template>
-  <el-card class="section-card section-manager" shadow="hover">
-    <template #header>
-      <div class="section-header">
-        <span class="section-title">
-          <el-icon><Operation /></el-icon>
-          {{ t('editor.moduleManager') }}
-        </span>
-      </div>
-    </template>
-
+  <div class="section-manager">
     <el-collapse v-model="activeSections" class="module-list">
       <el-collapse-item
         v-for="item in sections"
@@ -87,6 +89,16 @@ watch(
               <span>{{ item.label }}</span>
             </div>
             <div class="module-actions" @click.stop>
+              <el-tooltip content="编辑标题">
+                <el-button
+                  size="small"
+                  circle
+                  text
+                  @click.stop="editSectionTitle(item.key, item.label)"
+                >
+                  <el-icon><EditPen /></el-icon>
+                </el-button>
+              </el-tooltip>
               <el-tooltip :content="t('actions.moveUp')">
                 <el-button
                   size="small"
@@ -129,7 +141,7 @@ watch(
         </div>
       </el-collapse-item>
     </el-collapse>
-  </el-card>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -142,8 +154,8 @@ watch(
 }
 
 .module-item {
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
+  background: var(--or-bg-card);
+  border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -163,6 +175,7 @@ watch(
   gap: 8px;
   font-size: 13px;
   color: var(--el-text-color-primary);
+  font-weight: 500;
 }
 
 .module-actions {
@@ -176,10 +189,18 @@ watch(
 }
 
 :deep(.module-item .el-collapse-item__header) {
-  background-color: transparent;
+  background-color: #fff;
   border-bottom: none;
   padding: 8px 10px;
   min-height: 44px;
+  position: relative;
+}
+
+:deep(.module-item .el-collapse-item__arrow) {
+  position: absolute;
+  left: 10px;
+  margin: 0;
+  color: #666;
 }
 
 :deep(.module-item .el-collapse-item__wrap) {
@@ -189,5 +210,19 @@ watch(
 
 :deep(.module-item .el-collapse-item__content) {
   padding-bottom: 0;
+}
+
+:deep(.module-editor .section-card) {
+  border: none;
+  box-shadow: none;
+}
+
+:deep(.module-editor .section-card .el-card__header) {
+  display: none;
+  border-bottom: none;
+}
+
+:deep(.module-editor .section-card .el-card__body) {
+  padding: 0;
 }
 </style>

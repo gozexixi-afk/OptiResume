@@ -1,69 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 const { t } = useI18n()
 const store = useResumeStore()
-const newSkill = ref('')
-
-function addSkill() {
-  const skill = newSkill.value.trim()
-  if (skill) {
-    store.addSkill(skill)
-    newSkill.value = ''
-  }
-}
 </script>
 
 <template>
   <el-card class="section-card" shadow="hover">
-    <template #header>
-      <div class="section-header">
-        <span class="section-title">
-          <el-icon><SetUp /></el-icon>
-          {{ t('skills.title') }}
-        </span>
+    <el-empty v-if="store.data.skills.length === 0" :description="t('skills.empty')" :image-size="60" />
+
+    <div v-for="skill in store.data.skills" :key="skill.id" class="item-card">
+      <div class="item-actions">
+        <el-button size="small" circle text type="danger" @click="store.removeSkill(skill.id)">
+          <el-icon><Delete /></el-icon>
+        </el-button>
       </div>
-    </template>
-
-    <div class="skills-input">
-      <el-input
-        v-model="newSkill"
-        :placeholder="t('skills.placeholder')"
-        @keyup.enter="addSkill"
-      >
-        <template #append>
-          <el-button @click="addSkill">
-            <el-icon><Plus /></el-icon>
-          </el-button>
-        </template>
-      </el-input>
+      <el-form label-position="top" class="module-form">
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item :label="t('skills.name')">
+              <el-input v-model="skill.name" :placeholder="t('skills.namePlaceholder')" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item :label="t('skills.description')">
+          <RichTextEditor v-model="skill.description" :placeholder="t('skills.descriptionPlaceholder')" class="fixed-editor" />
+        </el-form-item>
+      </el-form>
     </div>
-
-    <div class="skills-tags" v-if="store.data.skills.length > 0">
-      <el-tag
-        v-for="(skill, index) in store.data.skills"
-        :key="index"
-        closable
-        size="large"
-        @close="store.removeSkill(index)"
-      >
-        {{ skill }}
-      </el-tag>
+    <div class="module-footer">
+      <el-button type="primary" @click="store.addSkill">
+        <el-icon><Plus /></el-icon>
+        {{ t('skills.add') }}
+      </el-button>
     </div>
-    <el-empty v-else :description="t('skills.empty')" :image-size="60" />
   </el-card>
 </template>
 
 <style scoped lang="scss">
-.skills-input {
-  margin-bottom: 12px;
+.module-form {
+  padding-top: 2px;
 }
 
-.skills-tags {
+.module-footer {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-start;
+  padding-top: 4px;
+  border-top: 1px dashed var(--el-border-color-lighter);
+}
+
+.fixed-editor {
+  :deep(.ProseMirror) {
+    min-height: 170px;
+  }
 }
 </style>

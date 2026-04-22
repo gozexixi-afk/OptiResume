@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 const { t } = useI18n()
 const store = useResumeStore()
@@ -14,13 +15,19 @@ const store = useResumeStore()
           <el-icon><Aim /></el-icon>
           {{ t('objective.title') }}
         </span>
+        <div class="section-extra">
+          <el-icon><EditPen /></el-icon>
+        </div>
       </div>
     </template>
-    <el-input
-      v-model="store.data.objective"
-      type="textarea"
-      :rows="3"
-      :placeholder="t('objective.placeholder')"
-    />
+    <RichTextEditor v-model="store.data.objective" :placeholder="t('objective.placeholder')" />
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.section-extra {
+  position: absolute;
+  right: 0;
+  color: var(--el-text-color-secondary);
+}
+</style>

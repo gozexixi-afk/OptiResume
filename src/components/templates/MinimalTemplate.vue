@@ -8,6 +8,10 @@ const { t } = useI18n()
 const store = useResumeStore()
 const orderedSections = computed(() => store.sectionOrder.filter(key => key !== 'personal'))
 
+function isHtmlContent(text: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(text)
+}
+
 function isSectionVisible(section: ResumeSectionKey): boolean {
   switch (section) {
     case 'objective':
@@ -50,7 +54,8 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
     <template v-for="section in orderedSections" :key="section">
       <section v-if="section === 'objective' && isSectionVisible(section)" class="mn-section">
         <h2>{{ t('objective.title') }}</h2>
-        <p>{{ store.data.objective }}</p>
+        <div v-if="isHtmlContent(store.data.objective)" class="mn-rich-text" v-html="store.data.objective"></div>
+        <p v-else>{{ store.data.objective }}</p>
       </section>
 
       <section v-else-if="section === 'summary' && isSectionVisible(section)" class="mn-section">
@@ -69,35 +74,39 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
           <span class="mn-entry-date">
             {{ exp.startDate }} — {{ exp.isCurrent ? t('preview.present') : exp.endDate }}
           </span>
-          <p class="mn-entry-desc" v-if="exp.description">{{ exp.description }}</p>
+          <div v-if="exp.description && isHtmlContent(exp.description)" class="mn-entry-desc mn-rich-text" v-html="exp.description"></div>
+          <p class="mn-entry-desc" v-else-if="exp.description">{{ exp.description }}</p>
         </div>
       </section>
 
       <section v-else-if="section === 'education' && isSectionVisible(section)" class="mn-section">
-        <h2>{{ t('education.title') }}</h2>
+        <h2>{{ store.getSectionTitle('education', t('education.title')) }}</h2>
         <div v-for="edu in store.data.education" :key="edu.id" class="mn-entry">
           <div class="mn-entry-main">
             <span class="mn-entry-title">{{ edu.school }}</span>
             <span class="mn-sep" v-if="edu.degree">|</span>
-            <span class="mn-entry-sub">{{ edu.degree }} {{ edu.field }}</span>
+            <span class="mn-entry-sub">{{ edu.major || edu.field }} {{ edu.degree }}</span>
           </div>
           <span class="mn-entry-date">{{ edu.startDate }} — {{ edu.endDate }}</span>
         </div>
       </section>
 
       <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mn-section">
-        <h2>{{ t('skills.title') }}</h2>
-        <p class="mn-skills-line">{{ store.data.skills.join('  ·  ') }}</p>
+        <h2>{{ store.getSectionTitle('skills', t('skills.title')) }}</h2>
+        <p class="mn-skills-line">{{ store.data.skills.map(item => item.name).join('  ·  ') }}</p>
       </section>
 
       <section v-else-if="section === 'projects' && isSectionVisible(section)" class="mn-section">
-        <h2>{{ t('projects.title') }}</h2>
+        <h2>{{ store.getSectionTitle('projects', t('projects.title')) }}</h2>
         <div v-for="proj in store.data.projects" :key="proj.id" class="mn-entry">
           <div class="mn-entry-main">
             <span class="mn-entry-title">{{ proj.name }}</span>
             <a v-if="proj.link" :href="proj.link" class="mn-link" target="_blank">{{ proj.link }}</a>
           </div>
-          <p class="mn-entry-desc" v-if="proj.description">{{ proj.description }}</p>
+          <p class="mn-entry-sub" v-if="proj.role || proj.city">{{ [proj.role, proj.city].filter(Boolean).join(' · ') }}</p>
+          <p class="mn-entry-date" v-if="proj.startDate || proj.endDate">{{ proj.startDate }} — {{ proj.endDate }}</p>
+          <div v-if="proj.description && isHtmlContent(proj.description)" class="mn-entry-desc mn-rich-text" v-html="proj.description"></div>
+          <p class="mn-entry-desc" v-else-if="proj.description">{{ proj.description }}</p>
         </div>
       </section>
 
@@ -114,7 +123,8 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
       <template v-else-if="section === 'customSections' && isSectionVisible(section)">
         <section v-for="custom in store.data.customSections" :key="custom.id" class="mn-section">
           <h2>{{ custom.title }}</h2>
-          <p>{{ custom.content }}</p>
+          <div v-if="isHtmlContent(custom.content)" class="mn-rich-text" v-html="custom.content"></div>
+          <p v-else>{{ custom.content }}</p>
         </section>
       </template>
     </template>
@@ -230,5 +240,16 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
   text-decoration: none;
   border-bottom: 1px dotted #999;
   margin-left: auto;
+}
+
+.mn-rich-text {
+  :deep(p) {
+    margin: 0 0 6px;
+  }
+
+  :deep(ul), :deep(ol) {
+    margin: 0;
+    padding-left: 18px;
+  }
 }
 </style>

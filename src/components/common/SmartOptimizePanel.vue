@@ -51,6 +51,7 @@ function normalizeAiResult(raw: Partial<ResumeData>): Partial<ResumeData> {
     ...raw,
     experience: ensureIds(raw.experience as any) as any,
     education: ensureIds(raw.education as any) as any,
+    skills: ensureIds(raw.skills as any) as any,
     projects: ensureIds(raw.projects as any) as any,
     customSections: ensureIds(raw.customSections as any) as any
   }
@@ -78,7 +79,7 @@ function handleDiffApply(selected: Record<string, boolean>) {
   if (selected.summary && after.summary) d.summary = after.summary
   if (selected.experience && Array.isArray(after.experience) && after.experience.length) d.experience = after.experience as any
   if (selected.education && Array.isArray(after.education) && after.education.length) d.education = after.education as any
-  if (selected.skills && Array.isArray(after.skills) && after.skills.length) d.skills = after.skills
+  if (selected.skills && Array.isArray(after.skills) && after.skills.length) resumeStore.normalizeSkills(after.skills as any)
   if (selected.projects && Array.isArray(after.projects) && after.projects.length) d.projects = after.projects as any
   if (selected.languages && Array.isArray(after.languages) && after.languages.length) d.languages = after.languages as any
   if (selected.customSections && Array.isArray(after.customSections) && after.customSections.length) d.customSections = after.customSections as any

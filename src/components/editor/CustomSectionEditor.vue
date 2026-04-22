@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
+import RichTextEditor from '@/components/common/RichTextEditor.vue'
 
 const { t } = useI18n()
 const store = useResumeStore()
@@ -14,10 +15,9 @@ const store = useResumeStore()
           <el-icon><Grid /></el-icon>
           {{ t('customSection.title') }}
         </span>
-        <el-button type="primary" size="small" @click="store.addCustomSection">
-          <el-icon><Plus /></el-icon>
-          {{ t('customSection.add') }}
-        </el-button>
+        <div class="section-extra">
+          <el-icon><EditPen /></el-icon>
+        </div>
       </div>
     </template>
 
@@ -40,14 +40,21 @@ const store = useResumeStore()
         </el-form-item>
 
         <el-form-item :label="t('customSection.content')">
-          <el-input
-            v-model="section.content"
-            type="textarea"
-            :rows="4"
-            :placeholder="t('customSection.contentPlaceholder')"
-          />
+          <RichTextEditor v-model="section.content" :placeholder="t('customSection.contentPlaceholder')" />
         </el-form-item>
       </el-form>
     </div>
+    <el-button type="primary" @click="store.addCustomSection">
+      <el-icon><Plus /></el-icon>
+      {{ t('customSection.add') }}
+    </el-button>
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.section-extra {
+  position: absolute;
+  right: 0;
+  color: var(--el-text-color-secondary);
+}
+</style>

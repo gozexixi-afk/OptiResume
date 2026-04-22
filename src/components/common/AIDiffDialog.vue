@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ResumeData, ExperienceItem, EducationItem, ProjectItem, LanguageItem, CustomSection } from '@/types/resume'
+import type { ResumeData, ExperienceItem, EducationItem, ProjectItem, LanguageItem, CustomSection, SkillItem } from '@/types/resume'
 
 const props = defineProps<{
   visible: boolean
@@ -68,8 +68,8 @@ const sections = computed<DiffSection[]>(() => {
   const eduAfter = a.education?.length ? formatEducation(a.education as EducationItem[]) : eduBefore
   list.push({ key: 'education', label: t('education.title'), beforeText: eduBefore, afterText: eduAfter, hasChange: eduBefore !== eduAfter })
 
-  const skillsBefore = b.skills.join(', ')
-  const skillsAfter = a.skills?.length ? a.skills.join(', ') : skillsBefore
+  const skillsBefore = formatSkills(b.skills)
+  const skillsAfter = a.skills?.length ? formatSkills(a.skills as SkillItem[]) : skillsBefore
   list.push({ key: 'skills', label: t('skills.title'), beforeText: skillsBefore, afterText: skillsAfter, hasChange: skillsBefore !== skillsAfter })
 
   const projBefore = formatProjects(b.projects)
@@ -140,6 +140,11 @@ function formatEducation(list: EducationItem[]): string {
 function formatProjects(list: ProjectItem[]): string {
   if (!list.length) return '-'
   return list.map(p => `${p.name || '?'}: ${p.description || ''}`).join('\n')
+}
+
+function formatSkills(list: SkillItem[]): string {
+  if (!list.length) return '-'
+  return list.map(s => `${s.name}${s.description ? ': ' + stripHtml(s.description) : ''}`).join('\n')
 }
 
 function formatLanguages(list: LanguageItem[]): string {

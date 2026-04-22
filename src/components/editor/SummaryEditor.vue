@@ -15,8 +15,19 @@ const store = useResumeStore()
           <el-icon><Document /></el-icon>
           {{ t('summary.title') }}
         </span>
+        <div class="section-extra">
+          <el-icon><EditPen /></el-icon>
+        </div>
       </div>
     </template>
     <RichTextEditor v-model="store.data.summary" :placeholder="t('summary.placeholder')" />
   </el-card>
 </template>
+
+<style scoped lang="scss">
+.section-extra {
+  position: absolute;
+  right: 0;
+  color: var(--el-text-color-secondary);
+}
+</style>
