@@ -185,7 +185,7 @@ function editSectionTitle(section: ResumeSectionKey, current: string) {
 }
 
 .module-editor {
-  padding: 4px;
+  padding: 4px 12px;
 }
 
 :deep(.module-item .el-collapse-item__header) {

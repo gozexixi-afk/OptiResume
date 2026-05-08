@@ -153,11 +153,8 @@ const contactList = computed(() => {
         <div class="ct-divider"></div>
         <ul class="ct-bullets">
           <li v-for="(skill, i) in store.data.skills" :key="skill.id || i">
-            <span class="ct-main-title">{{ skill.name }}</span>
-            <template v-if="skill.description">
-              ：<span v-if="!isHtmlContent(skill.description)">{{ skill.description }}</span>
-            </template>
-            <div v-if="skill.description && isHtmlContent(skill.description)" class="ct-rich-text" v-html="skill.description"></div>
+            <span v-if="isHtmlContent(skill.name)" class="ct-main-title ct-rich-inline" v-html="skill.name"></span>
+            <span v-else class="ct-main-title">{{ skill.name }}</span>
           </li>
         </ul>
       </section>
@@ -384,6 +381,12 @@ const contactList = computed(() => {
 
   :deep(li) {
     margin-bottom: 2px;
+  }
+}
+
+.ct-rich-inline {
+  :deep(p) {
+    margin: 0;
   }
 }
 

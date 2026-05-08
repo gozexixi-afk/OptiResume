@@ -93,7 +93,12 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
 
       <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mn-section">
         <h2>{{ store.getSectionTitle('skills', t('skills.title')) }}</h2>
-        <p class="mn-skills-line">{{ store.data.skills.map(item => item.name).join('  ·  ') }}</p>
+        <div class="mn-skills-line">
+          <template v-for="(item, i) in store.data.skills" :key="item.id || i">
+            <span class="mn-skill-item" v-html="item.name"></span>
+            <span v-if="i < store.data.skills.length - 1" class="mn-skill-sep"> · </span>
+          </template>
+        </div>
       </section>
 
       <section v-else-if="section === 'projects' && isSectionVisible(section)" class="mn-section">
@@ -232,6 +237,17 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
 .mn-skills-line {
   color: #555;
   font-size: 12.5px;
+}
+
+.mn-skill-item {
+  :deep(p) {
+    margin: 0;
+    display: inline;
+  }
+}
+
+.mn-skill-sep {
+  color: #999;
 }
 
 .mn-link {

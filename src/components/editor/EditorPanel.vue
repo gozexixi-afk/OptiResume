@@ -17,7 +17,7 @@ const { t } = useI18n()
 
 <style scoped lang="scss">
 .editor-panel-inner {
-  max-width: 600px;
+  max-width: 680px;
   margin: 0 auto;
 }
 

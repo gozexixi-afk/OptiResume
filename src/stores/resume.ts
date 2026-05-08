@@ -55,8 +55,7 @@ function loadFromStorage(): ResumeData {
       if (Array.isArray(merged.skills) && merged.skills.length && typeof merged.skills[0] === 'string') {
         merged.skills = (merged.skills as string[]).map((name) => ({
           id: uuidv4(),
-          name,
-          description: ''
+          name
         }))
       }
       return merged
@@ -198,8 +197,7 @@ export const useResumeStore = defineStore('resume', () => {
   function addSkill() {
     data.value.skills.push({
       id: uuidv4(),
-      name: '',
-      description: ''
+      name: ''
     })
   }
 
@@ -207,11 +205,15 @@ export const useResumeStore = defineStore('resume', () => {
     data.value.skills = data.value.skills.filter(skill => skill.id !== id)
   }
 
+  function removeSkillByIndex(index: number) {
+    if (index < 0 || index >= data.value.skills.length) return
+    data.value.skills.splice(index, 1)
+  }
+
   function normalizeSkills(skills: SkillItem[]) {
     data.value.skills = skills.map(item => ({
       id: item.id || uuidv4(),
-      name: item.name || '',
-      description: item.description || ''
+      name: item.name || ''
     }))
   }
 
@@ -294,7 +296,7 @@ export const useResumeStore = defineStore('resume', () => {
     addProject, removeProject,
     addLanguage, removeLanguage,
     addCustomSection, removeCustomSection,
-    addSkill, removeSkill, normalizeSkills,
+    addSkill, removeSkill, removeSkillByIndex, normalizeSkills,
     moveSection, removeSection, restoreSection, hasSection,
     getSectionTitle, setSectionTitle,
     importData, resetData

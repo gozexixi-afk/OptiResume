@@ -102,8 +102,6 @@ export default {
     add: 'Add Professional Skill',
     name: 'Skill Name',
     namePlaceholder: 'Enter skill name',
-    description: 'Skill Description',
-    descriptionPlaceholder: 'Enter skill description',
     placeholder: 'Type a skill and press Enter',
     empty: 'No skills yet, type and press Enter to add'
   },

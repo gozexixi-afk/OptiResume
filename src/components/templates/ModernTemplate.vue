@@ -108,7 +108,12 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
         <section v-else-if="section === 'skills' && isSectionVisible(section)" class="mt-section">
           <h2 class="mt-section-title">{{ store.getSectionTitle('skills', t('skills.title')) }}</h2>
           <div class="mt-skills">
-            <span v-for="(skill, i) in store.data.skills" :key="skill.id || i" class="mt-skill">{{ skill.name }}</span>
+            <span
+              v-for="(skill, i) in store.data.skills"
+              :key="skill.id || i"
+              class="mt-skill"
+              v-html="skill.name"
+            ></span>
           </div>
         </section>
 
@@ -240,6 +245,10 @@ function isSectionVisible(section: ResumeSectionKey): boolean {
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
+
+  :deep(p) {
+    margin: 0;
+  }
 }
 
 .mt-lang-item {

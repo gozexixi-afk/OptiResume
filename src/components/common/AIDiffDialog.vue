@@ -144,7 +144,7 @@ function formatProjects(list: ProjectItem[]): string {
 
 function formatSkills(list: SkillItem[]): string {
   if (!list.length) return '-'
-  return list.map(s => `${s.name}${s.description ? ': ' + stripHtml(s.description) : ''}`).join('\n')
+  return list.map(s => stripHtml(s.name || '?')).join('\n')
 }
 
 function formatLanguages(list: LanguageItem[]): string {

@@ -102,8 +102,6 @@ export default {
     add: '添加专业技能',
     name: '技能名称',
     namePlaceholder: '请输入技能名称',
-    description: '技能描述',
-    descriptionPlaceholder: '请输入技能描述',
     placeholder: '输入技能后按回车添加',
     empty: '暂无技能，输入后按回车添加'
   },

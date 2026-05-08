@@ -222,7 +222,7 @@ export const AI_PROMPTS = {
 ${JSON_OUTPUT_RULE}`,
 
   generate: `你是一个专业的简历撰写专家。根据以下职位描述，帮助生成匹配的简历内容。
-请返回 JSON 格式的简历数据，包含以下字段：objective（求职意向）、summary（自我评价）、skills（技能列表，对象数组，每项含 name/description）。
+请返回 JSON 格式的简历数据，包含以下字段：objective（求职意向）、summary（自我评价）、skills（技能列表，对象数组，每项含 name）。
 ${JSON_OUTPUT_RULE}`,
 
   translate_en: `你是一个专业翻译。请将以下简历内容翻译为英文。
@@ -241,7 +241,7 @@ JSON 结构如下：
   "summary": "",
   "experience": [{ "company": "", "position": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "description": "", "isCurrent": false }],
   "education": [{ "school": "", "major": "", "degree": "", "field": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "schoolType": "", "college": "", "city": "", "campusExperience": "" }],
-  "skills": [{ "name": "", "description": "" }],
+  "skills": [{ "name": "" }],
   "projects": [{ "name": "", "role": "", "city": "", "startDate": "YYYY-MM", "endDate": "YYYY-MM", "description": "", "link": "" }],
   "languages": [{ "name": "", "level": "" }]
 }
